@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
-        <ion-title>🍿 Film Catalogus</ion-title>
+        <ion-title>Film Catalogus</ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -64,7 +64,7 @@ const allMovies = ref([]);
 async function loadMovies() {
   try {
     const res = await axios.get(
-      "https://anaseddaouodisee.be/WM-RESTfulAPIProjectCineLog-2526/api/inc/movies/get_all.php"
+      "https://ayaboutaarourte-odiseebe.webhosting.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/inc/movies/get_all.php"
     );
 
     // Combine internal + TMDB
