@@ -2,39 +2,83 @@
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
-        <ion-title>Film Catalogus</ion-title>
+        <ion-title>⭐ Film Catalogus</ion-title>
       </ion-toolbar>
     </ion-header>
 
     <ion-content :fullscreen="true">
 
+      <!-- ============ TOP SECTION: TRENDING ONLY ============ -->
+      <h2 class="category-title ion-padding-start ion-padding-top">
+        Trending films
+      </h2>
+
+      <div class="horizontal-scroll-container">
+        <div v-for="film in trending" :key="'trend-' + film.id" class="film-item">
+          <div class="film-card-content">
+            <img class="film-poster" :src="film.poster_url" :alt="film.title" />
+            <ion-text color="light">
+              <p class="film-title">{{ film.title }}</p>
+              <p class="film-sub">{{ film.year }}</p>
+            </ion-text>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOADER -->
+      <ion-progress-bar v-if="loadingTop" type="indeterminate" color="danger"></ion-progress-bar>
+
+      <!-- ============ FILTERS ============ -->
+      <div class="filter-row">
+
+        <!-- CATEGORY -->
+        <ion-select class="filter-select-outline"
+          interface="popover"
+          :value="selectedCategory"
+          @ionChange="selectedCategory = $event.detail.value"
+        >
+          <ion-select-option value="all">Alle films</ion-select-option>
+          <ion-select-option value="trending">Trending</ion-select-option>
+          <ion-select-option value="popular">Popular</ion-select-option>
+          <ion-select-option value="top_rated">Top Rated</ion-select-option>
+        </ion-select>
+
+        <!-- GENRE -->
+        <ion-select class="filter-select-outline"
+          interface="popover"
+          :value="selectedGenre"
+          @ionChange="selectedGenre = $event.detail.value"
+        >
+          <ion-select-option value="all">Alle genres</ion-select-option>
+          <ion-select-option v-for="g in genres" :key="g" :value="g">{{ g }}</ion-select-option>
+        </ion-select>
+
+      </div>
+
+      <!-- ============ GRID ============ -->
       <ion-grid>
         <ion-row>
           <ion-col
-            v-for="film in allMovies"
-            :key="film.id"
+            v-for="film in filteredMovies"
+            :key="'grid-' + film.id"
             size="6"
             size-md="4"
             size-lg="3"
-            class="film-col"
+            class="grid-col"
           >
-            <div class="film-card">
-
-              <img
-                class="film-poster"
-                :src="film.poster_url"
-                alt="Poster"
-              />
-
-              <h3 class="film-title">{{ film.title }}</h3>
-              <p class="film-sub">{{ film.year }}</p>
-
+            <div class="grid-film-card">
+              <img class="grid-film-poster" :src="film.poster_url" :alt="film.title" />
+              <h3 class="grid-film-title">{{ film.title }}</h3>
+              <p class="grid-film-sub">
+                {{ film.year }}
+                <span v-if="film.genres.length"> · {{ film.genres[0] }}</span>
+              </p>
             </div>
           </ion-col>
         </ion-row>
       </ion-grid>
 
-      <ion-progress-bar type="indeterminate" v-if="allMovies.length === 0"></ion-progress-bar>
+      <ion-progress-bar v-if="loadingGrid" type="indeterminate" color="danger"></ion-progress-bar>
 
     </ion-content>
   </ion-page>
@@ -42,86 +86,240 @@
 
 <script setup>
 import {
-  IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonGrid,
-  IonRow,
-  IonCol,
-  IonProgressBar,
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
+  IonText, IonProgressBar, IonGrid, IonRow, IonCol,
+  IonSelect, IonSelectOption
 } from "@ionic/vue";
 
 import axios from "axios";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 
-const allMovies = ref([]);
+const BASE = "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/inc/movies";
 
-async function loadMovies() {
+// MAIN STATE
+const trending = ref([]);
+const popular = ref([]);
+const topRated = ref([]);
+const internalMovies = ref([]);
+
+const loadingTop = ref(true);
+const loadingGrid = ref(true);
+
+// FILTERS
+const selectedCategory = ref("all");
+const selectedGenre = ref("all");
+
+// TMDB GENRES
+const genres = [
+  "Action","Adventure","Animation","Comedy","Crime","Documentary","Drama",
+  "Family","Fantasy","History","Horror","Music","Mystery","Romance",
+  "Science Fiction","TV Movie","Thriller","War","Western"
+];
+
+const tmdbGenreMap = {
+  28:"Action",12:"Adventure",16:"Animation",35:"Comedy",80:"Crime",99:"Documentary",
+  18:"Drama",10751:"Family",14:"Fantasy",36:"History",27:"Horror",10402:"Music",
+  9648:"Mystery",10749:"Romance",878:"Science Fiction",10770:"TV Movie",
+  53:"Thriller",10752:"War",37:"Western"
+};
+
+// FORMATTERS
+function mapInternalMovie(m) {
+  return {
+    id: m.id,
+    title: m.title,
+    year: String(m.year),
+    poster_url: m.poster_url,
+    source: "internal",
+    categories: ["all"],
+    genres: m.genre ? [m.genre] : [],
+    releaseDate: null,
+  };
+}
+
+function mapTmdbMovie(m, category) {
+  return {
+    id: m.id,
+    title: m.title,
+    year: m.release_date ? m.release_date.slice(0, 4) : "",
+    poster_url: m.poster_path
+      ? "https://image.tmdb.org/t/p/w300" + m.poster_path
+      : "",
+    source: "tmdb",
+    categories: ["all", category],
+    genres: (m.genre_ids || []).map(id => tmdbGenreMap[id]).filter(Boolean),
+    releaseDate: m.release_date || null,
+  };
+}
+
+// LOAD TRENDING + INTERNAL
+async function loadTopSections() {
   try {
-    const res = await axios.get(
-      "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/inc/movies/get_all.php"
-    );
-
+    const res = await axios.get(`${BASE}/get_all.php`);
     const parsed = JSON.parse(res.data.data);
 
-    const internal = parsed.internal;
-    const tmdb = parsed.tmdb_trending;
+    internalMovies.value = parsed.internal.map(mapInternalMovie);
 
-    const tmdbFormatted = tmdb.map(m => ({
-      id: m.id,
-      title: m.title,
-      year: m.release_date?.slice(0, 4) || "",
-      poster_url: "https://image.tmdb.org/t/p/w300" + m.poster_path,
-    }));
+    const trendingRaw = parsed.tmdb_trending || [];
+    trending.value = trendingRaw.map(m => mapTmdbMovie(m, "trending"));
 
-    allMovies.value = [...internal, ...tmdbFormatted];
-  } catch (err) {
-    console.error(err);
+  } finally {
+    loadingTop.value = false;
   }
 }
 
-loadMovies();
-</script>
+// LOAD POPULAR + TOP RATED
+async function loadPopularTopRated() {
+  try {
+    const popRes = await axios.get(`${BASE}/TMDB_API/popular.php`);
+    const popParsed = JSON.parse(popRes.data.data);
+    popular.value = (popParsed.results || []).map(m =>
+      mapTmdbMovie(m, "popular")
+    );
 
-<style scoped>
-.film-col {
-  padding: 10px;
-  display: flex;
-  justify-content: center;
+    const topRes = await axios.get(`${BASE}/TMDB_API/top_rated.php`);
+    const topParsed = JSON.parse(topRes.data.data);
+    topRated.value = (topParsed.results || []).map(m =>
+      mapTmdbMovie(m, "top_rated")
+    );
+
+  } finally {
+    loadingGrid.value = false;
+  }
 }
 
-.film-card {
-  width: 100%;
-  max-width: 170px;
-  text-align: center;
-  background: transparent;
+loadTopSections();
+loadPopularTopRated();
+
+// COMPUTED
+const allMoviesForGrid = computed(() => {
+  const allTmdb = [...trending.value, ...popular.value, ...topRated.value];
+  const unique = [];
+  const seen = new Set();
+
+  for (const m of allTmdb) {
+    if (!seen.has(m.id)) {
+      seen.add(m.id);
+      unique.push(m);
+    }
+  }
+
+  return [...internalMovies.value, ...unique];
+});
+
+const filteredMovies = computed(() => {
+  let list = allMoviesForGrid.value;
+
+  if (selectedCategory.value !== "all") {
+    list = list.filter(m => m.categories.includes(selectedCategory.value));
+  }
+
+  if (selectedGenre.value !== "all") {
+    const g = selectedGenre.value.toLowerCase();
+    list = list.filter(m =>
+      m.genres.some(gg => gg.toLowerCase() === g)
+    );
+  }
+
+  return list;
+});
+</script>
+
+
+
+<style scoped>
+/* BLACK THEME */
+ion-content::part(background) {
+  --background: #000 !important;
+}
+ion-toolbar {
+  --background: #000 !important;
+  --color: white !important;
+}
+
+/* SECTION TITLES */
+.category-title {
+  color: white;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+/* HORIZONTAL LISTS */
+.horizontal-scroll-container {
+  display: flex;
+  overflow-x: auto;
+  padding: 0 10px 12px 10px;
+  scrollbar-width: none;
+}
+.horizontal-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.film-item {
+  width: 120px;
+  flex-shrink: 0;
+  margin-right: 10px;
 }
 
 .film-poster {
   width: 100%;
-  aspect-ratio: 2 / 3;
+  aspect-ratio: 2/3;
   object-fit: cover;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.35);
-  transition: transform 0.25s ease;
-}
-
-.film-poster:hover {
-  transform: scale(1.06);
+  border-radius: 6px;
 }
 
 .film-title {
-  margin-top: 10px;
-  font-size: 15px;
-  font-weight: 600;
   color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.film-sub {
+  color: #999;
+  font-size: 0.8rem;
 }
 
-.film-sub {
-  margin: 0;
+/* FILTERS (OPTION B: OUTLINE STYLE) */
+.filter-row {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+}
+
+.filter-select-outline {
+  --placeholder-color: white;
+  --color: white;
+  --background: transparent;
+  --padding-start: 12px;
+  --padding-end: 12px;
+  border: 1px solid #444;
+  border-radius: 10px;
+  min-width: 120px;
+}
+
+/* GRID */
+.grid-col {
+  padding: 10px;
+}
+
+.grid-film-card {
+  text-align: center;
+}
+
+.grid-film-poster {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.grid-film-title {
+  color: white;
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.grid-film-sub {
+  color: #bbb;
   font-size: 13px;
-  color: #d0d0d0;
 }
 </style>
