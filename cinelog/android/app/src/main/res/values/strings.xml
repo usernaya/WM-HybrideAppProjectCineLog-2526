@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">cinelog</string>
+    <string name="title_activity_main">cinelog</string>
+    <string name="package_name">ionic.cinelog</string>
+    <string name="custom_url_scheme">ionic.cinelog</string>
+</resources>
