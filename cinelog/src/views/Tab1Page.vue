@@ -2,13 +2,13 @@
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
-        <ion-title>⭐ Film Catalogus</ion-title>
+        <ion-title>Film Catalogus</ion-title>
       </ion-toolbar>
     </ion-header>
 
     <ion-content :fullscreen="true">
 
-      <!-- ============ TOP SECTION: TRENDING ONLY ============ -->
+      <!-- trending scroll container -->
       <h2 class="category-title ion-padding-start ion-padding-top">
         Trending films
       </h2>
@@ -25,13 +25,13 @@
         </div>
       </div>
 
-      <!-- LOADER -->
+      <!-- loader -->
       <ion-progress-bar v-if="loadingTop" type="indeterminate" color="danger"></ion-progress-bar>
 
-      <!-- ============ FILTERS ============ -->
+      <!-- filters -->
       <div class="filter-row">
 
-        <!-- CATEGORY -->
+        <!-- categories -->
         <ion-select class="filter-select-outline"
           interface="popover"
           :value="selectedCategory"
@@ -43,7 +43,7 @@
           <ion-select-option value="top_rated">Top Rated</ion-select-option>
         </ion-select>
 
-        <!-- GENRE -->
+        <!-- genres -->
         <ion-select class="filter-select-outline"
           interface="popover"
           :value="selectedGenre"
@@ -55,7 +55,7 @@
 
       </div>
 
-      <!-- ============ GRID ============ -->
+      <!-- grid voor films -->
       <ion-grid>
         <ion-row>
           <ion-col
@@ -96,7 +96,7 @@ import { ref, computed } from "vue";
 
 const BASE = "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/inc/movies";
 
-// MAIN STATE
+// main data
 const trending = ref([]);
 const popular = ref([]);
 const topRated = ref([]);
@@ -105,11 +105,11 @@ const internalMovies = ref([]);
 const loadingTop = ref(true);
 const loadingGrid = ref(true);
 
-// FILTERS
+// filters
 const selectedCategory = ref("all");
 const selectedGenre = ref("all");
 
-// TMDB GENRES
+// tmdb api genre list
 const genres = [
   "Action","Adventure","Animation","Comedy","Crime","Documentary","Drama",
   "Family","Fantasy","History","Horror","Music","Mystery","Romance",
@@ -123,7 +123,7 @@ const tmdbGenreMap = {
   53:"Thriller",10752:"War",37:"Western"
 };
 
-// FORMATTERS
+// formatting movie data
 function mapInternalMovie(m) {
   return {
     id: m.id,
@@ -152,7 +152,7 @@ function mapTmdbMovie(m, category) {
   };
 }
 
-// LOAD TRENDING + INTERNAL
+// load trending + internal
 async function loadTopSections() {
   try {
     const res = await axios.get(`${BASE}/get_all.php`);
@@ -168,7 +168,7 @@ async function loadTopSections() {
   }
 }
 
-// LOAD POPULAR + TOP RATED
+// load popular + top rated
 async function loadPopularTopRated() {
   try {
     const popRes = await axios.get(`${BASE}/TMDB_API/popular.php`);
@@ -191,7 +191,7 @@ async function loadPopularTopRated() {
 loadTopSections();
 loadPopularTopRated();
 
-// COMPUTED
+// computed voor alle films in de grid
 const allMoviesForGrid = computed(() => {
   const allTmdb = [...trending.value, ...popular.value, ...topRated.value];
   const unique = [];
@@ -228,7 +228,7 @@ const filteredMovies = computed(() => {
 
 
 <style scoped>
-/* BLACK THEME */
+/* black theme */
 ion-content::part(background) {
   --background: #000 !important;
 }
@@ -237,14 +237,14 @@ ion-toolbar {
   --color: white !important;
 }
 
-/* SECTION TITLES */
+/* section titles */
 .category-title {
   color: white;
   font-size: 1.3rem;
   font-weight: 700;
 }
 
-/* HORIZONTAL LISTS */
+/* horizontal lists */
 .horizontal-scroll-container {
   display: flex;
   overflow-x: auto;
@@ -278,7 +278,7 @@ ion-toolbar {
   font-size: 0.8rem;
 }
 
-/* FILTERS (OPTION B: OUTLINE STYLE) */
+/* filters (option b: outline style) */
 .filter-row {
   display: flex;
   gap: 10px;
@@ -296,7 +296,7 @@ ion-toolbar {
   min-width: 120px;
 }
 
-/* GRID */
+/* grid */
 .grid-col {
   padding: 10px;
 }
