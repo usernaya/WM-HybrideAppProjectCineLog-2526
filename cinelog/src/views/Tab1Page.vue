@@ -155,18 +155,24 @@ function mapTmdbMovie(m, category) {
 // load trending + internal
 async function loadTopSections() {
   try {
-    const res = await axios.get(`${BASE}/get_all.php`);
-    const parsed = JSON.parse(res.data.data);
+    console.log("TEST API CALL:", `${BASE}/get_all.php`);
 
+    const res = await axios.get(`${BASE}/get_all.php`);
+    console.log("API RESPONSE:", res);
+
+    const parsed = JSON.parse(res.data.data);
     internalMovies.value = parsed.internal.map(mapInternalMovie);
 
     const trendingRaw = parsed.tmdb_trending || [];
     trending.value = trendingRaw.map(m => mapTmdbMovie(m, "trending"));
 
+  } catch (err) {
+    console.error("API ERROR:", err);
   } finally {
     loadingTop.value = false;
   }
 }
+
 
 // load popular + top rated
 async function loadPopularTopRated() {
