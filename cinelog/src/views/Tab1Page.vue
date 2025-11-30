@@ -8,30 +8,31 @@
 
     <ion-content :fullscreen="true">
 
-      <!-- trending scroll container -->
       <h2 class="category-title ion-padding-start ion-padding-top">
         Trending films
       </h2>
 
       <div class="horizontal-scroll-container">
-        <div v-for="film in trending" :key="'trend-' + film.id" class="film-item">
+        <div 
+          v-for="film in trending" 
+          :key="'trend-' + film.id" 
+          class="film-item clickable-card" 
+          @click="openDetail(film)"
+        >
           <div class="film-card-content">
             <img class="film-poster" :src="film.poster_url" :alt="film.title" />
             <ion-text color="light">
-              <p class="film-title">{{ film.title }}</p>
-              <p class="film-sub">{{ film.year }}</p>
+              <p class="film-title ion-no-margin">{{ film.title }}</p>
+              <p class="film-sub ion-no-margin">{{ film.year }}</p>
             </ion-text>
           </div>
         </div>
       </div>
 
-      <!-- loader -->
       <ion-progress-bar v-if="loadingTop" type="indeterminate" color="danger"></ion-progress-bar>
 
-      <!-- filters -->
       <div class="filter-row">
 
-        <!-- categories -->
         <ion-select class="filter-select-outline"
           interface="popover"
           :value="selectedCategory"
@@ -43,7 +44,6 @@
           <ion-select-option value="top_rated">Top Rated</ion-select-option>
         </ion-select>
 
-        <!-- genres -->
         <ion-select class="filter-select-outline"
           interface="popover"
           :value="selectedGenre"
@@ -55,7 +55,6 @@
 
       </div>
 
-      <!-- grid voor films -->
       <ion-grid>
         <ion-row>
           <ion-col
@@ -66,7 +65,7 @@
             size-lg="3"
             class="grid-col"
           >
-            <div class="grid-film-card">
+            <div class="grid-film-card clickable-card" @click="openDetail(film)">
               <img class="grid-film-poster" :src="film.poster_url" :alt="film.title" />
               <h3 class="grid-film-title">{{ film.title }}</h3>
               <p class="grid-film-sub">
@@ -90,11 +89,13 @@ import {
   IonText, IonProgressBar, IonGrid, IonRow, IonCol,
   IonSelect, IonSelectOption
 } from "@ionic/vue";
-
+import { useRouter } from 'vue-router';
 import axios from "axios";
 import { ref, computed } from "vue";
 
-const BASE = "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/inc/movies";
+const router = useRouter();
+
+const BASE = "https://anaseddaouodisee.be/WM-RESTfulAPIProjectCineLog-2526/api/inc/movies/get_all.php";
 
 // main data
 const trending = ref([]);
@@ -123,7 +124,7 @@ const tmdbGenreMap = {
   53:"Thriller",10752:"War",37:"Western"
 };
 
-// formatting movie data
+// formatting movie data (met toevoeging van description/overview)
 function mapInternalMovie(m) {
   return {
     id: m.id,
@@ -134,6 +135,7 @@ function mapInternalMovie(m) {
     categories: ["all"],
     genres: m.genre ? [m.genre] : [],
     releaseDate: null,
+    description: m.description || "Geen beschrijving beschikbaar.", 
   };
 }
 
@@ -149,6 +151,7 @@ function mapTmdbMovie(m, category) {
     categories: ["all", category],
     genres: (m.genre_ids || []).map(id => tmdbGenreMap[id]).filter(Boolean),
     releaseDate: m.release_date || null,
+    description: m.overview || "Geen beschrijving beschikbaar.",
   };
 }
 
@@ -223,9 +226,20 @@ const filteredMovies = computed(() => {
 
   return list;
 });
+
+
+// Functie voor navigatie naar de detailpagina
+function openDetail(film) {
+  // Sla het volledige filmobject op in localStorage om op de detailpagina op te halen
+  localStorage.setItem("selected_movie", JSON.stringify(film));
+
+  router.push({
+    name: "MovieDetails",
+    params: { id: film.id }
+  });
+}
+
 </script>
-
-
 
 <style scoped>
 /* black theme */
@@ -235,6 +249,11 @@ ion-content::part(background) {
 ion-toolbar {
   --background: #000 !important;
   --color: white !important;
+}
+
+/* Klikbare items */
+.clickable-card {
+  cursor: pointer;
 }
 
 /* section titles */
@@ -272,6 +291,9 @@ ion-toolbar {
   color: white;
   font-size: 0.9rem;
   font-weight: 600;
+  white-space: nowrap; 
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .film-sub {
   color: #999;
@@ -321,5 +343,57 @@ ion-toolbar {
 .grid-film-sub {
   color: #bbb;
   font-size: 13px;
+}
+/* animatiess */
+
+.film-poster {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  border-radius: 6px;
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  z-index: 1; 
+  position: relative; 
+}
+
+.film-item:hover .film-poster {
+  transform: scale(1.1) translateY(-5px); 
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6); 
+  z-index: 10; 
+}
+
+.film-item:active .film-poster {
+  transform: scale(1.05) translateY(-3px); 
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
+
+.grid-film-card {
+  text-align: center;
+}
+
+.grid-film-poster {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  border-radius: 10px;
+
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  z-index: 1; 
+  position: relative; 
+}
+
+.grid-film-card:hover .grid-film-poster {
+  transform: scale(1.1) translateY(-5px); 
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+  z-index: 10;
+}
+
+.grid-film-card:active .grid-film-poster {
+  transform: scale(1.05) translateY(-3px); 
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
+  z-index: 10;
 }
 </style>
