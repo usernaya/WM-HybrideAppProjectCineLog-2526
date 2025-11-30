@@ -1,2 +1,21 @@
 /* For information on how to create your own theme, please refer to:
 http://ionicframework.com/docs/theming/ */
+/* src/theme/variables.css of vergelijkbaar bestand */
+
+:root {
+  /* ... andere kleuren ... */
+
+  /* FIX 1: Zorgt dat de basis-achtergrondkleur voor de hele app zwart is */
+  --ion-background-color: #000000; 
+  --ion-background-color-rgb: 0, 0, 0;
+
+  /* FIX 2: Zorgt ervoor dat de standaard kleur 'dark' in Ionic echt zwart is */
+  --ion-color-dark: #000000;
+  --ion-color-dark-rgb: 0, 0, 0;
+  --ion-color-dark-contrast: #ffffff;
+}
+
+/* FIX 3: Dwingt de HTML body/root om zwart te zijn */
+html {
+  background: #000000;
+}
