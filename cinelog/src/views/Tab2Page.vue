@@ -82,6 +82,7 @@ async function loadWatchlist() {
     watchlist.value = data.map(f => ({
       id: f.movie_id,
       movie_id: f.movie_id,
+      tmdb_id: f.tmdb_id ?? null,
       title: f.title,
       year: f.year,
       genres: f.genre ? [f.genre] : [],
