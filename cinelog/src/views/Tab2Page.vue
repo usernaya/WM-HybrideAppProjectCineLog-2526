@@ -13,7 +13,7 @@
         <ion-progress-bar type="indeterminate" color="danger"></ion-progress-bar>
       </div>
 
-      <!-- LEEG -->
+      <!-- EMPTY -->
       <div v-else-if="watchlist.length === 0" class="ion-text-center ion-padding">
         <ion-text color="light">
           <h2>Je watchlist is leeg</h2>
@@ -79,17 +79,16 @@ async function loadWatchlist() {
 
     const data = res.data.data || [];
 
-    // MAPPING voor detailpagina + nette grid structuur
     watchlist.value = data.map(f => ({
       id: f.movie_id,
       movie_id: f.movie_id,
-      tmdb_id: f.tmdb_id,
       title: f.title,
       year: f.year,
       genres: f.genre ? [f.genre] : [],
       poster_url: f.poster_url,
       description: f.description || "Geen beschrijving beschikbaar.",
-      source: f.is_default ? "tmdb" : "internal"
+      source: f.is_default ? "tmdb" : "internal",
+      in_watchlist: true
     }));
 
   } catch (err) {
@@ -124,11 +123,11 @@ ion-toolbar {
 .grid-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
+  gap: 18px;
   padding: 15px;
 }
 
-/* Posters & Cards */
+/* FULL CARD */
 .grid-card {
   cursor: pointer;
   text-align: center;
@@ -139,11 +138,12 @@ ion-toolbar {
   transform: scale(1.05);
 }
 
+/* POSTER */
 .grid-poster {
   width: 100%;
   aspect-ratio: 2 / 3;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: 12px;
 
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
@@ -153,10 +153,10 @@ ion-toolbar {
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
 }
 
-/* Titel onder poster */
+/* TITEL */
 .grid-title {
   margin-top: 7px;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
   color: white;
   white-space: nowrap;
@@ -164,9 +164,10 @@ ion-toolbar {
   text-overflow: ellipsis;
 }
 
+/* SUBTEXT */
 .grid-sub {
   color: #bbb;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
 }
 
 /* RESPONSIVE */
