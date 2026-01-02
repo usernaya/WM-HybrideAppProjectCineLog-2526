@@ -1,22 +1,19 @@
 <template>
   <ion-page>
     <ion-tabs>
-      <ion-router-outlet></ion-router-outlet>
+      <ion-router-outlet />
 
       <ion-tab-bar slot="bottom">
+        <!-- home -->
         <ion-tab-button tab="tab1" href="/tabs/tab1">
           <ion-icon :icon="triangle" />
-          <ion-label>Tab 1</ion-label>
+          <ion-label>Home</ion-label>
         </ion-tab-button>
 
-        <ion-tab-button tab="tab2" href="/tabs/tab2">
-          <ion-icon :icon="ellipse" />
-          <ion-label>Tab 2</ion-label>
-        </ion-tab-button>
-
-        <ion-tab-button tab="tab3" href="/tabs/tab3">
+        <!-- profile -->
+        <ion-tab-button tab="profile" href="/tabs/profile">
           <ion-icon :icon="square" />
-          <ion-label>Tab 3</ion-label>
+          <ion-label>Profile</ion-label>
         </ion-tab-button>
       </ion-tab-bar>
     </ion-tabs>
@@ -24,15 +21,15 @@
 </template>
 
 <script setup>
-import { 
-  IonPage, 
+import {
+  IonPage,
   IonTabs,
-  IonTabBar, 
-  IonTabButton, 
-  IonRouterOutlet, 
-  IonLabel, 
-  IonIcon 
-} from '@ionic/vue';
+  IonTabBar,
+  IonTabButton,
+  IonRouterOutlet,
+  IonLabel,
+  IonIcon
+} from "@ionic/vue";
 
-import { triangle, ellipse, square } from 'ionicons/icons';
+import { triangle, square } from "ionicons/icons";
 </script>
