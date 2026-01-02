@@ -22,6 +22,12 @@ const routes = [
         name: "Home",
         component: () => import("@/views/HomePage.vue")
       },
+      /* search */
+      {
+        path: "search",
+        component: () => import("@/views/SearchPage.vue")
+      },
+
 
       /* profile */
       {

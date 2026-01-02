@@ -1,0 +1,283 @@
+<template>
+    <ion-page>
+        <ion-header>
+            <ion-toolbar>
+                <ion-title>Search</ion-title>
+            </ion-toolbar>
+        </ion-header>
+
+        <ion-content class="search-content">
+
+            <!-- search bar -->
+            <div class="search-bar-wrapper">
+                <ion-searchbar v-model="query" placeholder="Search a movie..." @ionInput="onSearch" debounce="400" />
+            </div>
+
+            <!-- loading -->
+            <ion-progress-bar v-if="loading" type="indeterminate" color="danger" />
+
+            <!-- popular movies -->
+            <div v-if="!query.length && popularMovies.length" class="grid">
+                <div v-for="m in popularMovies" :key="'popular-' + m.id" class="card" @click="openMovie(m)">
+                    <img :src="m.poster" />
+                    <div class="overlay">
+                        <p class="title">{{ m.title }}</p>
+                        <p v-if="m.year" class="year">{{ m.year }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- results -->
+            <div v-else-if="movies.length" class="grid">
+                <div v-for="m in movies" :key="m.id + m.source" class="card" @click="openMovie(m)">
+                    <img :src="m.poster" />
+                    <div class="overlay">
+                        <p class="title">{{ m.title }}</p>
+                        <p v-if="m.year" class="year">{{ m.year }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- empty -->
+            <div v-else-if="query.length >= 2 && !loading" class="empty">
+                <p>No results found</p>
+            </div>
+
+        </ion-content>
+    </ion-page>
+</template>
+
+<script setup>
+import {
+    IonPage,
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    IonContent,
+    IonSearchbar,
+    IonProgressBar
+} from "@ionic/vue";
+
+import { ref, computed } from "vue";
+import axios from "axios";
+import noPoster from "@/assets/posters/no-poster.png";
+import { useRouter } from "vue-router";
+import { onMounted } from "vue";
+
+const router = useRouter();
+
+/* api */
+const API =
+    "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/inc/movies/search_all.php";
+
+const TMDB_POPULAR_API =
+    "https://api.themoviedb.org/3/movie/popular?api_key=6bc179f67d4901690b3b039f05b87254";
+
+
+/* state */
+const query = ref("");
+const loading = ref(false);
+const popularMovies = ref([]);
+
+const results = ref({
+    internal: [],
+    tmdb: []
+});
+
+/* list */
+const movies = computed(() => [
+    ...results.value.internal.map(m => ({ ...m, source: "internal" })),
+    ...results.value.tmdb.map(m => ({ ...m, source: "tmdb" }))
+]);
+
+/* actions */
+async function onSearch() {
+    if (query.value.trim().length < 2) {
+        results.value.internal = [];
+        results.value.tmdb = [];
+        return;
+    }
+
+    loading.value = true;
+
+    try {
+        const res = await axios.get(API, {
+            params: { q: query.value }
+        });
+
+        const data = JSON.parse(res.data.data);
+
+        results.value.internal = data.internal
+            .map(m => normalizeMovie(m, "internal"))
+            .filter(Boolean);
+
+        results.value.tmdb = data.tmdb
+            .map(m => normalizeMovie(m, "tmdb"))
+            .filter(Boolean);
+
+    } catch (e) {
+        console.error("Search error", e);
+    } finally {
+        loading.value = false;
+    }
+}
+
+
+function openMovie(movie) {
+    localStorage.setItem("selected_movie", JSON.stringify(movie));
+
+    router.push({
+        name: "MovieDetails",
+        params: { id: movie.id }
+    });
+}
+
+function normalizeMovie(movie, source) {
+    const hasPoster =
+        source === "tmdb" ? !!movie.poster_path : !!movie.poster_url;
+
+    const hasDescription =
+        source === "tmdb"
+            ? !!movie.overview?.trim()
+            : !!movie.description?.trim();
+
+    const hasYear =
+        source === "tmdb" ? !!movie.release_date : !!movie.year;
+
+    if (!hasPoster && !hasDescription && !hasYear) {
+        return null;
+    }
+
+    return {
+        ...movie,
+        year:
+            source === "tmdb"
+                ? movie.release_date?.split("-")[0]
+                : movie.year,
+        poster: hasPoster
+            ? source === "tmdb"
+                ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+                : movie.poster_url
+            : noPoster
+    };
+}
+
+async function loadPopularMovies() {
+    try {
+        const res = await axios.get(TMDB_POPULAR_API);
+
+        popularMovies.value = res.data.results
+            .map(m => normalizeMovie(m, "tmdb"))
+            .filter(Boolean);
+
+    } catch (err) {
+        console.error("Popular movies error", err);
+    }
+}
+
+onMounted(() => {
+    loadPopularMovies();
+});
+
+
+</script>
+
+<style scoped>
+/* layout */
+.search-content {
+    --background: #000;
+}
+
+/* search bar */
+.search-bar-wrapper {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #000;
+    padding: 8px 12px;
+}
+
+/* grid */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 14px;
+    padding: 12px;
+}
+
+/* card */
+.card {
+    position: relative;
+    cursor: pointer;
+}
+
+.card img {
+    width: 100%;
+    height: 210px;
+    object-fit: cover;
+    border-radius: 14px;
+    background: #111;
+}
+
+/* overlay */
+.overlay {
+    position: absolute;
+    inset: auto 0 0 0;
+    padding: 8px;
+    border-radius: 0 0 14px 14px;
+    background: linear-gradient(to top,
+            rgba(0, 0, 0, 0.85),
+            rgba(0, 0, 0, 0));
+}
+
+.title {
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.year {
+    font-size: 0.7rem;
+    color: #bbb;
+}
+
+/* search bar */
+
+ion-searchbar {
+    --background: #111;
+    --color: #fff;
+    --placeholder-color: #777;
+    --border-radius: 999px;
+    --box-shadow: none;
+    --icon-color: #777;
+    --clear-button-color: #777;
+    padding-inline-start: 0;
+    padding-inline-end: 0;
+}
+
+/* input height */
+ion-searchbar::part(input) {
+    height: 42px;
+    font-size: 0.9rem;
+}
+
+/* remove default border */
+ion-searchbar::part(container) {
+    border-radius: 999px;
+    border: none;
+}
+
+/* focus state  */
+ion-searchbar.searchbar-has-focus {
+    --background: #151515;
+}
+
+
+/* empty */
+.empty {
+    text-align: center;
+    margin-top: 40px;
+    color: #777;
+}
+</style>

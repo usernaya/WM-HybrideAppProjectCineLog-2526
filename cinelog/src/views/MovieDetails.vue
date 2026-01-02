@@ -24,7 +24,7 @@
 
         <!-- header -->
         <div class="movie-header">
-          <img :src="movie.poster_url" class="detail-poster" />
+          <img :src="posterSrc" class="detail-poster" :class="{ placeholder: isPlaceholder }" />
 
           <div class="movie-info">
             <h1 class="movie-title">{{ movie.title }}</h1>
@@ -37,7 +37,7 @@
             </p>
 
             <!-- watchlist button -->
-            <ion-button expand="block" color="danger" fill="outline" :disabled="watchlistLoading"
+            <ion-button class="watchlist-btn" expand="block" color="danger" fill="outline" :disabled="watchlistLoading"
               @click="toggleWatchlist">
               <ion-spinner v-if="watchlistLoading" name="crescent" slot="start" />
               <ion-icon v-else :icon="inWatchlist ? heart : heartOutline" slot="start" />
@@ -51,8 +51,6 @@
                 </template>
               </span>
             </ion-button>
-
-
           </div>
         </div>
 
@@ -70,8 +68,11 @@
         <!-- overview -->
         <div class="overview-section">
           <h2 class="section-title">Overview</h2>
-          <p class="description-text">
-            {{ movie.description || "No description available." }}
+          <p v-if="movie.description && movie.description.trim().length" class="description-text">
+            {{ movie.description }}
+          </p>
+          <p v-else class="description-text muted">
+            No description available.
           </p>
         </div>
 
@@ -103,13 +104,12 @@ import {
   IonIcon
 } from "@ionic/vue";
 
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import axios from "axios";
 import { heart, heartOutline } from "ionicons/icons";
 import { notifyWatchlistUpdated } from "@/utils/watchlistEvents";
 import { toastController } from "@ionic/vue";
-
-
+import noPoster from "@/assets/posters/no-poster.png";
 
 /* user */
 const user = JSON.parse(localStorage.getItem("user"));
@@ -121,7 +121,21 @@ const loading = ref(true);
 const inWatchlist = ref(false);
 const watchlistLoading = ref(false);
 
+/* poster logic */
+const posterSrc = computed(() => {
+  if (!movie.value) return noPoster;
 
+  if (movie.value.source === "tmdb") {
+    return movie.value.poster_url &&
+      !movie.value.poster_url.endsWith("null")
+      ? movie.value.poster_url
+      : noPoster;
+  }
+
+  return movie.value.poster_url || noPoster;
+});
+
+const isPlaceholder = computed(() => posterSrc.value === noPoster);
 
 /* api */
 const WATCHLIST_API =
@@ -140,7 +154,6 @@ async function loadMovie() {
 
   const baseMovie = JSON.parse(stored);
 
-  // TMDB → refetch
   const mustFetchTmdb =
     baseMovie.source === "tmdb" ||
     !baseMovie.description ||
@@ -167,15 +180,12 @@ async function loadMovie() {
       source: "tmdb"
     };
   } else {
-    // internal movie
     movie.value = baseMovie;
   }
 
   await checkWatchlist();
-
   loading.value = false;
 }
-
 
 /* check watchlist */
 async function checkWatchlist() {
@@ -191,13 +201,10 @@ async function checkWatchlist() {
 
   inWatchlist.value = res.data.in_watchlist === true;
 
-  // get internal movie_id if added from tmdb
   if (res.data.movie_id) {
     movie.value.movie_id = res.data.movie_id;
   }
 }
-
-
 
 /* toggle watchlist */
 async function toggleWatchlist() {
@@ -207,7 +214,6 @@ async function toggleWatchlist() {
 
   try {
     if (!inWatchlist.value) {
-      // add
       await axios.post(WATCHLIST_API, {
         user_id: userId,
         movie_id: movie.value.source === "internal" ? movie.value.id : null,
@@ -219,10 +225,8 @@ async function toggleWatchlist() {
       });
 
       inWatchlist.value = true;
-      showToast("Added to your watchlist", "success");
-
+      showToast("Added to your watchlist");
     } else {
-      // remove
       await axios.delete(WATCHLIST_API, {
         data: {
           user_id: userId,
@@ -232,19 +236,17 @@ async function toggleWatchlist() {
       });
 
       inWatchlist.value = false;
-      showToast("Removed from your watchlist", "danger");
+      showToast("Removed from your watchlist");
     }
 
     notifyWatchlistUpdated();
-
   } catch (err) {
-    showToast("Something went wrong", "danger");
+    showToast("Something went wrong");
     console.error(err);
   } finally {
     watchlistLoading.value = false;
   }
 }
-
 
 onMounted(loadMovie);
 
@@ -260,10 +262,11 @@ async function showToast(message) {
 
   await toast.present();
 }
-
 </script>
 
 <style scoped>
+/* global */
+
 ion-content::part(background) {
   --background: #000;
 }
@@ -273,15 +276,56 @@ ion-toolbar {
   --color: #fff;
 }
 
+
+/* header layout */
+
 .movie-header {
   display: flex;
   gap: 20px;
   margin-top: 20px;
+  align-items: flex-start;
 }
+
+/* Mobile stack */
+@media (max-width: 600px) {
+  .movie-header {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+
+/* poster */
 
 .detail-poster {
   width: 180px;
+  height: 270px;
   border-radius: 18px;
+  background: #181818;
+  object-fit: cover;
+}
+
+/* no poster placeholder */
+.detail-poster.placeholder {
+  object-fit: contain;
+  padding: 18px;
+}
+
+
+/* movie info */
+
+.movie-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Mobile text centering */
+@media (max-width: 600px) {
+  .movie-info {
+    align-items: center;
+    text-align: center;
+  }
 }
 
 .movie-title {
@@ -292,13 +336,55 @@ ion-toolbar {
 
 .meta-line {
   color: #bbb;
+  margin-top: 4px;
 }
+
+.muted {
+  color: #777;
+}
+
+
+/* watchlist button */
+
+.watchlist-btn {
+  --border-radius: 999px;
+  --padding-start: 18px;
+  --padding-end: 18px;
+  --padding-top: 8px;
+  --padding-bottom: 8px;
+
+  font-size: 0.85rem;
+  letter-spacing: 0.4px;
+
+  width: fit-content !important;
+  max-width: none;
+  margin-top: 14px;
+}
+
+/* center button on mobile */
+@media (max-width: 600px) {
+  .watchlist-btn {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+
+/* badges */
 
 .badge-row {
   display: flex;
   gap: 8px;
   margin-top: 18px;
   flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+/* center badges on mobile */
+@media (max-width: 600px) {
+  .badge-row {
+    justify-content: center;
+  }
 }
 
 .badge {
@@ -316,6 +402,9 @@ ion-toolbar {
 .badge-source {
   background: rgba(255, 0, 0, 0.25);
 }
+
+
+/* overview */
 
 .overview-section {
   margin-top: 28px;
