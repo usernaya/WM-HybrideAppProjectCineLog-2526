@@ -195,7 +195,7 @@ const WATCHLIST_API =
 
 /* poster */
 const posterSrc = computed(() =>
-  movie.value?.poster_url || noPoster
+  movie.value?.poster || movie.value?.poster_url || noPoster
 );
 
 /* average */
