@@ -1,89 +1,145 @@
 <template>
   <ion-page>
-    <ion-header :translucent="true">
+    <ion-header>
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-back-button default-href="/tabs/tab1" />
+          <ion-back-button default-href="/tabs/home" />
         </ion-buttons>
-        <ion-title>CINELOG</ion-title>
+        <ion-title>{{ movie?.title || "Movie" }}</ion-title>
       </ion-toolbar>
     </ion-header>
 
-    <ion-content :fullscreen="true" class="ion-padding">
+    <ion-content class="movie-content">
 
-      <!-- loading -->
-      <div v-if="loading" class="ion-text-center ion-padding-top">
+      <!-- LOADING -->
+      <div v-if="loading" class="center">
         <ion-progress-bar type="indeterminate" color="danger" />
-        <ion-text color="light">
-          <p>Loading movie…</p>
-        </ion-text>
       </div>
 
-      <!-- content -->
+      <!-- MOVIE -->
       <div v-else-if="movie">
 
-        <!-- header -->
-        <div class="movie-header">
-          <img :src="posterSrc" class="detail-poster" :class="{ placeholder: isPlaceholder }" />
+        <!-- HERO -->
+        <div class="hero">
+          <img :src="posterSrc" class="poster" />
 
-          <div class="movie-info">
-            <h1 class="movie-title">{{ movie.title }}</h1>
-
-            <p class="meta-line">
-              {{ movie.year }}
-              <span v-if="movie.genres?.length">
-                · {{ movie.genres.join(", ") }}
-              </span>
+          <div class="hero-info">
+            <h1>{{ movie.title }}</h1>
+            <p class="meta">
+              ★ {{ avgRating }} · {{ reviews.length }} reviews
             </p>
 
-            <!-- watchlist button -->
-            <ion-button class="watchlist-btn" expand="block" color="danger" fill="outline" :disabled="watchlistLoading"
-              @click="toggleWatchlist">
-              <ion-spinner v-if="watchlistLoading" name="crescent" slot="start" />
-              <ion-icon v-else :icon="inWatchlist ? heart : heartOutline" slot="start" />
-
-              <span>
-                <template v-if="watchlistLoading">
-                  {{ inWatchlist ? "Removing..." : "Adding..." }}
-                </template>
-                <template v-else>
-                  {{ inWatchlist ? "Remove from Watchlist" : "Add to Watchlist" }}
-                </template>
-              </span>
+            <!-- WATCHLIST -->
+            <ion-button
+              v-if="user"
+              class="watchlist-btn"
+              color="danger"
+              fill="outline"
+              size="small"
+              :disabled="watchlistLoading"
+              @click="toggleWatchlist"
+            >
+              <ion-icon
+                :icon="inWatchlist ? heart : heartOutline"
+                slot="start"
+              />
+              {{ inWatchlist ? "Remove from watchlist" : "Add to watchlist" }}
             </ion-button>
           </div>
         </div>
 
-        <!-- badges -->
-        <div class="badge-row">
-          <span class="badge">{{ movie.year }}</span>
-          <span v-for="g in movie.genres" :key="g" class="badge badge-genre">
-            {{ g }}
-          </span>
-          <span class="badge badge-source">
-            {{ movie.source.toUpperCase() }}
-          </span>
-        </div>
-
-        <!-- overview -->
-        <div class="overview-section">
-          <h2 class="section-title">Overview</h2>
-          <p v-if="movie.description && movie.description.trim().length" class="description-text">
+        <!-- OVERVIEW -->
+        <div class="overview">
+          <h3>Overview</h3>
+          <p v-if="movie.description">
             {{ movie.description }}
           </p>
-          <p v-else class="description-text muted">
+          <p v-else class="muted">
             No description available.
           </p>
         </div>
 
+        <!-- RATE -->
+        <div v-if="user" class="rate-card">
+          <h3>Rate this movie</h3>
+
+          <div class="stars-input">
+            <ion-icon
+              v-for="n in 5"
+              :key="n"
+              :icon="n <= myStars ? star : starOutline"
+              class="rate-star"
+              @click="myStars = n"
+            />
+          </div>
+
+          <ion-textarea
+            v-model="myReview"
+            placeholder="Write your review..."
+            auto-grow
+          />
+
+          <ion-button
+            expand="block"
+            color="danger"
+            :disabled="submitting"
+            @click="submitReview"
+          >
+            Submit review
+          </ion-button>
+        </div>
+
+        <div v-else class="login-hint">
+          Login to rate and add movies to your watchlist
+        </div>
+
+        <!-- REVIEWS -->
+        <div class="reviews">
+          <div
+            v-for="r in reviews"
+            :key="r.id"
+            class="review-card"
+          >
+            <div class="review-head">
+              <span class="user">@{{ r.username }}</span>
+              <span class="stars">★ {{ r.stars }}</span>
+            </div>
+
+            <p class="text">
+              {{ r.review || "No review text" }}
+            </p>
+
+            <div class="review-actions">
+              <button class="like-btn" @click="toggleLike(r)">
+                ❤️ {{ r.like_count }}
+              </button>
+
+              <!-- DELETE (ONLY OWNER) -->
+              <button
+                v-if="user && r.user_id === user.id"
+                class="delete-btn"
+                @click="confirmDelete(r.id)"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- fallback -->
-      <div v-else class="ion-text-center ion-padding">
-        <ion-text color="medium">
-          <p>Movie not found.</p>
-        </ion-text>
+      <!-- NOT FOUND -->
+      <div v-else class="center">
+        Movie not found
       </div>
+
+      <!-- DELETE CONFIRM -->
+      <ion-alert
+        :is-open="showDelete"
+        header="Delete review"
+        message="Ben je zeker dat je je review wil verwijderen?"
+        :buttons="deleteButtons"
+        @didDismiss="showDelete = false"
+      />
 
     </ion-content>
   </ion-page>
@@ -98,325 +154,292 @@ import {
   IonContent,
   IonButtons,
   IonBackButton,
-  IonText,
   IonProgressBar,
   IonButton,
-  IonIcon
+  IonTextarea,
+  IonIcon,
+  IonAlert
 } from "@ionic/vue";
 
-import { ref, onMounted, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import axios from "axios";
-import { heart, heartOutline } from "ionicons/icons";
-import { notifyWatchlistUpdated } from "@/utils/watchlistEvents";
-import { toastController } from "@ionic/vue";
+import { star, starOutline, heart, heartOutline } from "ionicons/icons";
 import noPoster from "@/assets/posters/no-poster.png";
 
-/* user */
-const user = JSON.parse(localStorage.getItem("user"));
-const userId = user?.id;
+/* auth */
+const user = JSON.parse(localStorage.getItem("user") || "null");
 
 /* state */
 const movie = ref(null);
+const reviews = ref([]);
 const loading = ref(true);
+const submitting = ref(false);
+
+const myStars = ref(0);
+const myReview = ref("");
+
 const inWatchlist = ref(false);
 const watchlistLoading = ref(false);
 
-/* poster logic */
-const posterSrc = computed(() => {
-  if (!movie.value) return noPoster;
-
-  if (movie.value.source === "tmdb") {
-    return movie.value.poster_url &&
-      !movie.value.poster_url.endsWith("null")
-      ? movie.value.poster_url
-      : noPoster;
-  }
-
-  return movie.value.poster_url || noPoster;
-});
-
-const isPlaceholder = computed(() => posterSrc.value === noPoster);
+/* delete */
+const showDelete = ref(false);
+const reviewToDelete = ref(null);
 
 /* api */
+const REVIEWS_API =
+  "https://anaseddaouodisee.be/WM-RESTfulAPIProjectCineLog-2526/api/reviews.php";
+const LIKES_API =
+  "https://anaseddaouodisee.be/WM-RESTfulAPIProjectCineLog-2526/api/likes.php";
 const WATCHLIST_API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/watchlist.php";
 
-const TMDB_DETAILS_API =
-  "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/inc/movies/TMDB_API/details.php";
+/* poster */
+const posterSrc = computed(() =>
+  movie.value?.poster_url || noPoster
+);
 
-/* load movie */
+/* average */
+const avgRating = computed(() => {
+  if (!reviews.value.length) return "0.0";
+  const sum = reviews.value.reduce((a, r) => a + Number(r.stars), 0);
+  return (sum / reviews.value.length).toFixed(1);
+});
+
+/* load */
 async function loadMovie() {
   const stored = localStorage.getItem("selected_movie");
-  if (!stored) {
-    loading.value = false;
-    return;
-  }
+  if (!stored) return (loading.value = false);
 
-  const baseMovie = JSON.parse(stored);
-
-  const mustFetchTmdb =
-    baseMovie.source === "tmdb" ||
-    !baseMovie.description ||
-    !baseMovie.genres ||
-    !baseMovie.year;
-
-  if (mustFetchTmdb && (baseMovie.tmdb_id || baseMovie.id)) {
-    const tmdbId = baseMovie.tmdb_id ?? baseMovie.id;
-
-    const res = await axios.get(TMDB_DETAILS_API, {
-      params: { id: tmdbId }
-    });
-
-    const data = JSON.parse(res.data.data);
-
-    movie.value = {
-      id: data.id,
-      tmdb_id: data.id,
-      title: data.title,
-      year: data.release_date?.split("-")[0],
-      poster_url: "https://image.tmdb.org/t/p/w300" + data.poster_path,
-      genres: data.genres?.map(g => g.name) || [],
-      description: data.overview,
-      source: "tmdb"
-    };
-  } else {
-    movie.value = baseMovie;
-  }
-
+  movie.value = JSON.parse(stored);
+  await loadReviews();
   await checkWatchlist();
   loading.value = false;
 }
 
-/* check watchlist */
+async function loadReviews() {
+  const params = movie.value.tmdb_id
+    ? { tmdb_id: movie.value.tmdb_id }
+    : { movie_id: movie.value.id };
+
+  const res = await axios.get(REVIEWS_API, { params });
+  reviews.value = res.data.data ?? [];
+}
+
+/* submit */
+async function submitReview() {
+  if (!user || !myStars.value || submitting.value) return;
+
+  submitting.value = true;
+
+  const payload = {
+    user_id: user.id,
+    stars: myStars.value,
+    review: myReview.value,
+    ...(movie.value.tmdb_id
+      ? { tmdb_id: movie.value.tmdb_id }
+      : { movie_id: movie.value.id })
+  };
+
+  await axios.post(REVIEWS_API, payload);
+
+  myStars.value = 0;
+  myReview.value = "";
+  submitting.value = false;
+  loadReviews();
+}
+
+/* like */
+async function toggleLike(r) {
+  if (!user) return;
+
+  await axios.post(LIKES_API, {
+    user_id: user.id,
+    review_id: r.id
+  });
+
+  loadReviews();
+}
+
+/* delete */
+function confirmDelete(id) {
+  reviewToDelete.value = id;
+  showDelete.value = true;
+}
+
+const deleteButtons = [
+  { text: "Cancel", role: "cancel" },
+  {
+    text: "Delete",
+    role: "destructive",
+    handler: async () => {
+      await axios.delete(REVIEWS_API, {
+        data: {
+          review_id: reviewToDelete.value,
+          user_id: user.id
+        }
+      });
+      reviewToDelete.value = null;
+      loadReviews();
+    }
+  }
+];
+
+/* watchlist */
 async function checkWatchlist() {
-  if (!userId || !movie.value) return;
+  if (!user || !movie.value) return;
 
   const res = await axios.get(WATCHLIST_API, {
     params: {
-      user_id: userId,
-      movie_id: movie.value.source === "internal" ? movie.value.id : null,
-      tmdb_id: movie.value.source === "tmdb" ? movie.value.tmdb_id : null
+      user_id: user.id,
+      movie_id: movie.value.id ?? null,
+      tmdb_id: movie.value.tmdb_id ?? null
     }
   });
 
   inWatchlist.value = res.data.in_watchlist === true;
-
-  if (res.data.movie_id) {
-    movie.value.movie_id = res.data.movie_id;
-  }
 }
 
-/* toggle watchlist */
 async function toggleWatchlist() {
-  if (!userId || !movie.value || watchlistLoading.value) return;
+  if (!user || watchlistLoading.value) return;
 
   watchlistLoading.value = true;
 
-  try {
-    if (!inWatchlist.value) {
-      await axios.post(WATCHLIST_API, {
-        user_id: userId,
-        movie_id: movie.value.source === "internal" ? movie.value.id : null,
-        tmdb_id: movie.value.source === "tmdb" ? movie.value.tmdb_id : null,
-        title: movie.value.title,
-        poster_url: movie.value.poster_url,
-        year: movie.value.year,
-        genre: movie.value.genres?.[0] ?? null
-      });
-
-      inWatchlist.value = true;
-      showToast("Added to your watchlist");
-    } else {
-      await axios.delete(WATCHLIST_API, {
-        data: {
-          user_id: userId,
-          movie_id: movie.value.source === "internal" ? movie.value.id : null,
-          tmdb_id: movie.value.source === "tmdb" ? movie.value.tmdb_id : null
-        }
-      });
-
-      inWatchlist.value = false;
-      showToast("Removed from your watchlist");
-    }
-
-    notifyWatchlistUpdated();
-  } catch (err) {
-    showToast("Something went wrong");
-    console.error(err);
-  } finally {
-    watchlistLoading.value = false;
+  if (!inWatchlist.value) {
+    await axios.post(WATCHLIST_API, {
+      user_id: user.id,
+      movie_id: movie.value.id ?? null,
+      tmdb_id: movie.value.tmdb_id ?? null,
+      title: movie.value.title,
+      poster_url: movie.value.poster_url
+    });
+    inWatchlist.value = true;
+  } else {
+    await axios.delete(WATCHLIST_API, {
+      data: {
+        user_id: user.id,
+        movie_id: movie.value.id ?? null,
+        tmdb_id: movie.value.tmdb_id ?? null
+      }
+    });
+    inWatchlist.value = false;
   }
+
+  watchlistLoading.value = false;
 }
 
 onMounted(loadMovie);
-
-/* toast */
-async function showToast(message) {
-  const toast = await toastController.create({
-    message,
-    duration: 1600,
-    position: "bottom",
-    cssClass: "design-toast",
-    translucent: true
-  });
-
-  await toast.present();
-}
 </script>
 
 <style scoped>
-/* global */
-
-ion-content::part(background) {
+.movie-content {
   --background: #000;
+  color: white;
 }
 
-ion-toolbar {
-  --background: #000;
-  --color: #fff;
-}
-
-
-/* header layout */
-
-.movie-header {
+/* hero */
+.hero {
   display: flex;
-  gap: 20px;
-  margin-top: 20px;
-  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
 }
 
-/* Mobile stack */
-@media (max-width: 600px) {
-  .movie-header {
-    flex-direction: column;
-    align-items: center;
-  }
-}
-
-
-/* poster */
-
-.detail-poster {
-  width: 180px;
-  height: 270px;
-  border-radius: 18px;
-  background: #181818;
+.poster {
+  width: 130px;
+  height: 195px;
+  border-radius: 14px;
   object-fit: cover;
 }
 
-/* no poster placeholder */
-.detail-poster.placeholder {
-  object-fit: contain;
-  padding: 18px;
+.meta {
+  color: #f5c518;
 }
 
-
-/* movie info */
-
-.movie-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+.watchlist-btn {
+  margin-top: 10px;
 }
 
-/* Mobile text centering */
-@media (max-width: 600px) {
-  .movie-info {
-    align-items: center;
-    text-align: center;
-  }
-}
-
-.movie-title {
-  color: white;
-  font-size: 1.9rem;
-  font-weight: 700;
-}
-
-.meta-line {
-  color: #bbb;
-  margin-top: 4px;
+/* overview */
+.overview {
+  padding: 0 20px 20px;
 }
 
 .muted {
   color: #777;
 }
 
-
-/* watchlist button */
-
-.watchlist-btn {
-  --border-radius: 999px;
-  --padding-start: 18px;
-  --padding-end: 18px;
-  --padding-top: 8px;
-  --padding-bottom: 8px;
-
-  font-size: 0.85rem;
-  letter-spacing: 0.4px;
-
-  width: fit-content !important;
-  max-width: none;
-  margin-top: 14px;
-}
-
-/* center button on mobile */
-@media (max-width: 600px) {
-  .watchlist-btn {
-    margin-left: auto;
-    margin-right: auto;
-  }
-}
-
-
-/* badges */
-
-.badge-row {
-  display: flex;
-  gap: 8px;
-  margin-top: 18px;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-}
-
-/* center badges on mobile */
-@media (max-width: 600px) {
-  .badge-row {
-    justify-content: center;
-  }
-}
-
-.badge {
-  padding: 6px 12px;
+/* rate */
+.rate-card {
+  margin: 0 16px 24px;
+  padding: 18px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #eee;
-  font-size: 0.75rem;
+  background: rgba(255,255,255,0.06);
 }
 
-.badge-genre {
-  background: rgba(255, 0, 0, 0.15);
+.stars-input {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
-.badge-source {
-  background: rgba(255, 0, 0, 0.25);
+.rate-star {
+  font-size: 26px;
+  color: #f5c518;
+  cursor: pointer;
 }
 
-
-/* overview */
-
-.overview-section {
-  margin-top: 28px;
+/* reviews */
+.reviews {
+  padding: 0 16px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.section-title {
-  color: white;
-  font-size: 1.3rem;
+.review-card {
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.06);
 }
 
-.description-text {
-  color: #ddd;
-  line-height: 1.6;
+.review-head {
+  display: flex;
+  justify-content: space-between;
+}
+
+.user {
+  color: #aaa;
+  font-size: 0.85rem;
+}
+
+.review-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.like-btn {
+  background: none;
+  border: none;
+  color: #ff6b6b;
+  cursor: pointer;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: #ff6b6b;
+  font-size: 0.8rem;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.delete-btn:hover {
+  opacity: 1;
+}
+
+.login-hint {
+  text-align: center;
+  color: #aaa;
+  margin: 20px;
 }
 </style>
