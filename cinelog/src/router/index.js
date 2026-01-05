@@ -27,11 +27,11 @@ const routes = [
         path: "search",
         component: () => import("@/views/SearchPage.vue")
       },
-        {
-      path: "reviews",
-      name: "Reviews",
-      component: () => import("@/views/reviews/ReviewsPage.vue")
-       },
+      {
+        path: "reviews",
+        name: "Reviews",
+        component: () => import("@/views/reviews/ReviewsPage.vue")
+      },
 
       /* profile */
       {
@@ -40,14 +40,14 @@ const routes = [
         component: () => import("@/views/profile/ProfilePage.vue"),
         meta: { requiresAuth: true }
       },
-       // buiten tabs, onder MovieReviews bv.
-        {
-          path: "/user/:id",
-          name: "UserProfile",
-          component: () => import("@/views/profile/ProfilePage.vue"),
-          meta: { requiresAuth: true }
-        }
-        ,
+      // buiten tabs, onder MovieReviews bv.
+      {
+        path: "/user/:id",
+        name: "UserProfile",
+        component: () => import("@/views/profile/ProfilePage.vue"),
+        meta: { requiresAuth: true }
+      }
+      ,
 
       {
         path: "profile/watchlist",
@@ -55,6 +55,7 @@ const routes = [
         component: () => import("@/views/profile/ProfileWatchlistPage.vue"),
         meta: { requiresAuth: true }
       },
+
 
       {
         path: "profile/watchlist/all",
@@ -130,10 +131,22 @@ const routes = [
     component: () => import("@/views/MovieDetails.vue")
   },
   {
-  path: "/movie/:id/reviews",
-  name: "MovieReviews",
-  component: () => import("@/views/reviews/MovieReviewsPage.vue")
- },
+    path: "/movie/:id/reviews",
+    name: "MovieReviews",
+    component: () => import("@/views/reviews/MovieReviewsPage.vue")
+  },
+  {
+    path: "/profile/requests",
+    name: "FriendRequests",
+    component: () => import("@/views/profile/FriendRequestsPage.vue")
+  },
+  {
+  path: "/profile/:mode(followers|following)",
+  name: "FriendsList",
+  component: () =>
+    import("@/views/profile/FriendsListPage.vue")
+}
+,
 
 
   /* auth */

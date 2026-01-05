@@ -2,11 +2,11 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
-   <ion-buttons slot="start" v-if="route.name === 'UserProfile'">
-  <ion-button fill="clear" @click="goBack">
-    ←
-  </ion-button>
-</ion-buttons>
+        <ion-buttons slot="start" v-if="route.name === 'UserProfile'">
+          <ion-button fill="clear" @click="goBack">
+            ←
+          </ion-button>
+        </ion-buttons>
 
 
         <ion-title>Profile</ion-title>
@@ -19,19 +19,18 @@
         </ion-buttons>
 
         <!-- popover menu (alleen eigen profiel) -->
-        <ion-popover
-          v-if="isOwnProfile"
-          trigger="profile-menu-btn"
-          trigger-action="click"
-          :dismiss-on-select="true"
-          side="bottom"
-          alignment="end"
-        >
+        <ion-popover v-if="isOwnProfile" trigger="profile-menu-btn" trigger-action="click" :dismiss-on-select="true"
+          side="bottom" alignment="end">
           <ion-content class="ion-no-padding">
             <ion-list lines="none">
               <ion-item button @click="goManageAccount">
                 <ion-label>Manage account</ion-label>
               </ion-item>
+
+              <ion-item button @click="router.push('/profile/requests')">
+                <ion-label>Friend requests</ion-label>
+              </ion-item>
+
 
               <ion-item v-if="isAdmin" button @click="goAdmin">
                 <ion-label>Admin</ion-label>
@@ -68,15 +67,31 @@
             <h2 class="name">{{ fullName }}</h2>
             <p class="username">@{{ profile.user.username }}</p>
 
+
+            <!-- follow button -->
+            <div v-if="!isOwnProfile && loggedUser" class="follow-floating">
+              <button type="button" class="follow-pill" :class="relationType"
+                :disabled="loadingFollow || relationType === 'requested'" @click.stop.prevent="handleFollowAction">
+                {{ followLabel }}
+              </button>
+
+            </div>
+
+
+
+
+
             <div class="mini-stats">
-              <div class="mini">
+              <div class="mini clickable" @click="goFollowers">
                 <strong>{{ profile.stats.followers }}</strong>
                 <span>Followers</span>
               </div>
-              <div class="mini">
+
+              <div class="mini clickable" @click="goFollowing">
                 <strong>{{ profile.stats.following }}</strong>
                 <span>Following</span>
               </div>
+
               <div class="mini">
                 <strong>{{ profile.stats.avg_rating }}</strong>
                 <span>★ Avg</span>
@@ -87,11 +102,7 @@
 
         <!-- stats row -->
         <div class="stats-row">
-          <button
-            class="stat"
-            :class="{ clickable: isOwnProfile }"
-            @click="isOwnProfile && goToWatchlist()"
-          >
+          <button class="stat" :class="{ clickable: isOwnProfile }" @click="isOwnProfile && goToWatchlist()">
             <strong>{{ profile.stats.watchlist_count }}</strong>
             <span>Watchlist</span>
           </button>
@@ -104,34 +115,23 @@
 
         <!-- tabs -->
         <div class="profile-tabs">
-          <button
-            v-for="t in tabs"
-            :key="t"
-            :class="{ active: activeTab === t }"
-            @click="activeTab = t"
-          >
+          <button v-for="t in tabs" :key="t" :class="{ active: activeTab === t }" @click="activeTab = t">
             {{ t }}
           </button>
         </div>
 
-        <!-- Profile tab -->
+        <!-- profile tab -->
         <section v-if="activeTab === 'Profile'" class="section">
           <div class="section-head">
             <h3>Favorites</h3>
           </div>
 
           <div class="movie-row">
-            <img
-              v-for="m in profile.top_movies"
-              :key="m.id"
-              :src="m.poster_url"
-              class="poster"
-              @click="openMovie(m)"
-            />
+            <img v-for="m in profile.top_movies" :key="m.id" :src="m.poster_url" class="poster" @click="openMovie(m)" />
           </div>
         </section>
 
-        <!-- Diary tab -->
+        <!-- diary tab -->
         <section v-if="activeTab === 'Diary'" class="section">
           <div class="section-head">
             <h3>Recent activity</h3>
@@ -149,7 +149,7 @@
           </div>
         </section>
 
-        <!-- Watchlist tab -->
+        <!-- watchlist tab -->
         <section v-if="activeTab === 'Watchlist'" class="section">
           <div class="watchlist-header">
             <h3>Watchlist</h3>
@@ -159,13 +159,8 @@
           </div>
 
           <div class="watchlist-grid">
-            <img
-              v-for="m in profile.watchlist_preview"
-              :key="m.id"
-              :src="m.poster_url"
-              class="poster"
-              @click="openMovie(m)"
-            />
+            <img v-for="m in profile.watchlist_preview" :key="m.id" :src="m.poster_url" class="poster"
+              @click="openMovie(m)" />
           </div>
         </section>
 
@@ -199,7 +194,7 @@ import {
 import { ellipsisVertical } from "ionicons/icons";
 import { useRouter, useRoute } from "vue-router";
 import axios from "axios";
-import { ref, computed, onMounted, onUnmounted, watch } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { onIonViewWillEnter } from "@ionic/vue";
 
 /* router */
@@ -214,6 +209,8 @@ const loading = ref(true);
 const profile = ref(null);
 const tabs = ["Profile", "Diary", "Watchlist"];
 const activeTab = ref("Profile");
+const relation = ref([]);
+const loadingFollow = ref(false);
 
 /* api */
 const PROFILE_API =
@@ -222,17 +219,15 @@ const PROFILE_API =
 const API_BASE =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/";
 
-/*
-  ✅ FIX:
-  - Tab Profile (route.name === "Profile") = altijd ingelogde user
-  - Public profile (route.name === "UserProfile") = params.id
-*/
+const FRIENDS_API =
+  "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/friends.php";
+
+/* profile id logic */
 const profileUserId = computed(() => {
   if (route.name === "UserProfile") {
     const pid = route.params.id;
     return pid ? Number(pid) : null;
   }
-  // tab profile
   return loggedUser?.id ?? null;
 });
 
@@ -242,7 +237,7 @@ const isOwnProfile = computed(() => {
 
 const isAdmin = computed(() => loggedUser?.role === "admin");
 
-/* computed helpers (met null safety) */
+/* computed helpers */
 const initials = computed(() => {
   const u = profile.value?.user;
   if (!u?.firstname || !u?.lastname) return "?";
@@ -251,8 +246,7 @@ const initials = computed(() => {
 
 const fullName = computed(() => {
   const u = profile.value?.user;
-  if (!u) return "";
-  return `${u.firstname} ${u.lastname}`;
+  return u ? `${u.firstname} ${u.lastname}` : "";
 });
 
 const avatarSrc = computed(() => {
@@ -260,29 +254,97 @@ const avatarSrc = computed(() => {
   if (!a) return "";
   return String(a).startsWith("http")
     ? String(a)
-    : (API_BASE + String(a).replace(/^\/+/, ""));
+    : API_BASE + String(a).replace(/^\/+/, "");
 });
 
-/* navigation */
-function goToWatchlist() {
-  router.push({ name: "ProfileWatchlist" });
-}
+/* relation logic */
+const relationType = computed(() => {
+  if (!Array.isArray(relation.value) || relation.value.length === 0) {
+    return "none";
+  }
 
-function openMovie(movie) {
-  localStorage.setItem(
-    "selected_movie",
-    JSON.stringify({
-      ...movie,
-      source: movie.is_default === 1 ? "tmdb" : "internal"
-    })
+  const me = loggedUser.id;
+  const other = profileUserId.value;
+
+  const outgoingAccepted = relation.value.find(
+    r => r.user1_id === me && r.user2_id === other && r.status === "accepted"
   );
 
-  router.push({
-    name: "MovieDetails",
-    params: {
-      id: movie.tmdb_id ?? movie.movie_id ?? movie.id
-    }
-  });
+  const incomingAccepted = relation.value.find(
+    r => r.user1_id === other && r.user2_id === me && r.status === "accepted"
+  );
+
+  const outgoingPending = relation.value.find(
+    r => r.user1_id === me && r.user2_id === other && r.status === "pending"
+  );
+
+  const incomingPending = relation.value.find(
+    r => r.user1_id === other && r.user2_id === me && r.status === "pending"
+  );
+
+  if (outgoingAccepted && incomingAccepted) return "friends";
+
+  if (outgoingPending) return "requested";
+
+  if (incomingPending) return "incoming";
+
+  if (outgoingAccepted) return "following";
+  if (incomingAccepted) return "follow_back";
+
+  return "none";
+});
+
+const followLabel = computed(() => {
+  switch (relationType.value) {
+    case "none":
+    case "follow_back":
+      return "Follow";
+    case "requested":
+      return "Requested";
+    case "incoming":
+      return "Accept";
+    case "following":
+      return "Following";
+    case "friends":
+      return "Friends";
+    default:
+      return "Follow";
+  }
+});
+
+/* follow handler */
+async function handleFollowAction() {
+  console.log("CLICK", relationType.value);
+
+  if (loadingFollow.value) return;
+
+  switch (relationType.value) {
+    case "none":
+    case "follow_back":
+      await sendFollow();
+      break;
+    case "incoming":
+      await acceptFollow();
+      break;
+    case "following":
+    case "friends":
+      await removeFriend();
+      break;
+  }
+}
+
+
+/* navigation */
+function goFollowers() {
+  router.push("/profile/followers");
+}
+
+function goFollowing() {
+  router.push("/profile/following");
+}
+
+function goToWatchlist() {
+  router.push({ name: "ProfileWatchlist" });
 }
 
 function goManageAccount() {
@@ -297,6 +359,7 @@ function logout() {
   localStorage.clear();
   router.replace("/login");
 }
+
 function goBack() {
   router.back();
 }
@@ -317,7 +380,6 @@ async function loadProfile() {
     const res = await axios.get(PROFILE_API, {
       params: { user_id: id }
     });
-
     profile.value = res.data?.data ?? null;
   } catch (e) {
     console.error("loadProfile failed", e);
@@ -325,37 +387,97 @@ async function loadProfile() {
   } finally {
     loading.value = false;
   }
+
+  await loadRelation();
 }
 
-/* events */
-function onProfileUpdated() {
-  if (isOwnProfile.value) loadProfile();
+async function loadRelation() {
+  if (!loggedUser || isOwnProfile.value || !profileUserId.value) return;
+
+  const res = await axios.get(FRIENDS_API, {
+    params: {
+      user1: loggedUser.id,
+      user2: profileUserId.value
+    }
+  });
+
+  console.log("RELATION API", res.data.data);
+
+  relation.value = res.data.data ?? [];
 }
 
-function onWatchlistUpdated() {
-  if (isOwnProfile.value) loadProfile();
+/* follow actions */
+async function sendFollow() {
+  console.log("SEND FOLLOW");
+
+  loadingFollow.value = true;
+
+  try {
+    const res = await axios.post(FRIENDS_API, {
+      user1_id: loggedUser.id,
+      user2_id: profileUserId.value
+    });
+
+    console.log("POST OK", res.data);
+
+    await loadRelation();
+  } catch (err) {
+    console.error("POST ERROR", err.response?.data || err);
+  } finally {
+    loadingFollow.value = false;
+  }
 }
 
+
+async function acceptFollow() {
+  if (loadingFollow.value) return;
+
+  loadingFollow.value = true;
+
+  try {
+    await axios.put(FRIENDS_API, {
+      user1_id: profileUserId.value,
+      user2_id: loggedUser.id
+    });
+
+    await loadRelation(); 
+  } finally {
+    loadingFollow.value = false;
+  }
+}
+
+
+async function removeFriend() {
+  if (loadingFollow.value) return;
+
+  loadingFollow.value = true;
+
+  try {
+    await axios.delete(FRIENDS_API, {
+      data: {
+        user1_id: loggedUser.id,
+        user2_id: profileUserId.value
+      }
+    });
+
+    await loadRelation(); 
+  } finally {
+    loadingFollow.value = false;
+  }
+}
+
+/* lifecycle */
 onMounted(() => {
   loadProfile();
-  window.addEventListener("profile-updated", onProfileUpdated);
-  window.addEventListener("watchlist-updated", onWatchlistUpdated);
 });
 
 onIonViewWillEnter(() => {
-  // als je terug naar tab profile komt: reset altijd eigen profiel (geen public state)
   if (route.name === "Profile") {
     activeTab.value = "Profile";
   }
   loadProfile();
 });
 
-onUnmounted(() => {
-  window.removeEventListener("profile-updated", onProfileUpdated);
-  window.removeEventListener("watchlist-updated", onWatchlistUpdated);
-});
-
-/* reload als je naar andere public user gaat */
 watch(
   () => route.params.id,
   () => {
@@ -366,6 +488,7 @@ watch(
   }
 );
 </script>
+
 
 <style scoped>
 .page {
@@ -388,23 +511,23 @@ watch(
   padding: 14px;
 }
 
-/* netflix-ish header */
+/* header */
 .header-card {
   display: flex;
   gap: 14px;
   align-items: center;
   padding: 14px;
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
-  border: 1px solid rgba(255,255,255,.08);
-  box-shadow: 0 18px 40px rgba(0,0,0,.55);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, .04));
+  border: 1px solid rgba(255, 255, 255, .08);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .55);
 }
 
 .avatar {
   width: 88px;
   height: 88px;
   border-radius: 50%;
-  background: rgba(255,255,255,.10);
+  background: rgba(255, 255, 255, .10);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -434,7 +557,7 @@ watch(
 
 .username {
   margin: 2px 0 10px;
-  color: rgba(255,255,255,.65);
+  color: rgba(255, 255, 255, .65);
   font-size: .9rem;
 }
 
@@ -450,7 +573,7 @@ watch(
 
 .mini span {
   font-size: .75rem;
-  color: rgba(255,255,255,.60);
+  color: rgba(255, 255, 255, .60);
 }
 
 /* stats row */
@@ -462,8 +585,8 @@ watch(
 
 .stat {
   flex: 1;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .08);
   padding: 12px;
   border-radius: 16px;
   text-align: center;
@@ -476,7 +599,7 @@ watch(
 
 .stat span {
   font-size: .75rem;
-  color: rgba(255,255,255,.65);
+  color: rgba(255, 255, 255, .65);
 }
 
 .clickable {
@@ -490,15 +613,15 @@ watch(
   gap: 10px;
   padding: 6px;
   border-radius: 999px;
-  background: rgba(255,255,255,.05);
-  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(255, 255, 255, .08);
 }
 
 .profile-tabs button {
   flex: 1;
   background: transparent;
   border: none;
-  color: rgba(255,255,255,.7);
+  color: rgba(255, 255, 255, .7);
   padding: 10px 0;
   border-radius: 999px;
   font-weight: 700;
@@ -506,7 +629,7 @@ watch(
 }
 
 .profile-tabs button.active {
-  background: rgba(255,255,255,.12);
+  background: rgba(255, 255, 255, .12);
   color: #fff;
 }
 
@@ -543,7 +666,7 @@ watch(
 }
 
 .see-all {
-  color: rgba(255,255,255,.65);
+  color: rgba(255, 255, 255, .65);
   font-size: .85rem;
   cursor: pointer;
 }
@@ -568,8 +691,8 @@ watch(
   gap: 12px;
   padding: 12px;
   border-radius: 16px;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .08);
 }
 
 .poster-small {
@@ -591,6 +714,121 @@ watch(
 .date {
   margin: 4px 0 0;
   font-size: .75rem;
-  color: rgba(255,255,255,.55);
+  color: rgba(255, 255, 255, .55);
 }
+
+.follow-container {
+  margin-top: 10px;
+}
+
+.follow-btn {
+  --border-radius: 999px;
+  height: 34px;
+  min-width: 130px;
+  font-weight: 700;
+  letter-spacing: .2px;
+  transition: all .25s ease;
+}
+
+/* default / follow */
+.follow-btn.none,
+.follow-btn.follow_back {
+  --background: #e50914;
+  --color: #fff;
+}
+
+/* requested */
+.follow-btn.requested {
+  --background: transparent;
+  --color: rgba(255, 255, 255, .7);
+  --border-color: rgba(255, 255, 255, .3);
+  border: 1px solid rgba(255, 255, 255, .25);
+}
+
+/* incoming (accept) */
+.follow-btn.incoming {
+  --background: #1db954;
+  --color: #fff;
+}
+
+/* following / friends */
+.follow-btn.following,
+.follow-btn.friends {
+  --background: rgba(255, 255, 255, .08);
+  --color: #fff;
+  border: 1px solid rgba(255, 255, 255, .2);
+}
+
+/* hover subtle */
+.follow-btn:hover {
+  transform: translateY(-1px);
+  opacity: .95;
+}
+
+.header-card {
+  position: relative;
+}
+
+/* container */
+.follow-floating {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+}
+
+/* base pill */
+.follow-pill {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .3px;
+  border: none;
+  cursor: pointer;
+  transition: all .2s ease;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .45);
+}
+
+/* follow / follow back */
+.follow-pill.none,
+.follow-pill.follow_back {
+  background: #e50914;
+  color: #fff;
+}
+
+/* requested */
+.follow-pill.requested {
+  background: transparent;
+  color: rgba(255, 255, 255, .6);
+  border: 1px solid rgba(255, 255, 255, .25);
+  cursor: default;
+}
+
+/* incoming (accept) */
+.follow-pill.incoming {
+  background: #1db954;
+  color: #fff;
+}
+
+/* following / friends */
+.follow-pill.following,
+.follow-pill.friends {
+  background: rgba(255, 255, 255, .08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, .2);
+}
+
+/* hover */
+.follow-pill:not(.requested):hover {
+  transform: translateY(-1px);
+  opacity: .95;
+}
+
+.follow-pill:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
 </style>
