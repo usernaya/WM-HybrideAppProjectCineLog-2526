@@ -3,8 +3,16 @@
         <ion-header>
             <ion-toolbar>
                 <ion-title>Search</ion-title>
+
+                <ion-buttons slot="end">
+                    <ion-button fill="clear" @click="openRequestModal">
+                        <ion-icon :icon="addOutline" size="large" />
+                    </ion-button>
+                </ion-buttons>
+
             </ion-toolbar>
         </ion-header>
+
 
         <ion-content class="search-content">
 
@@ -45,6 +53,38 @@
 
         </ion-content>
     </ion-page>
+
+    <ion-modal :is-open="showRequestModal" @didDismiss="closeRequestModal">
+        <ion-header>
+            <ion-toolbar>
+                <ion-title>Request a movie</ion-title>
+                <ion-buttons slot="end">
+                    <ion-button @click="closeRequestModal">Close</ion-button>
+                </ion-buttons>
+            </ion-toolbar>
+        </ion-header>
+
+        <ion-content class="ion-padding">
+            <ion-item>
+                <ion-input v-model="requestForm.title" label="Title" label-placement="stacked"
+                    placeholder="Movie title" />
+            </ion-item>
+
+            <ion-item>
+                <ion-input v-model="requestForm.year" label="Year" label-placement="stacked" type="number" />
+            </ion-item>
+
+            <ion-item>
+                <ion-input v-model="requestForm.director" label="Director" label-placement="stacked" />
+            </ion-item>
+
+            <ion-button expand="block" class="ion-margin-top" :disabled="sendingRequest || !requestForm.title"
+                @click="sendMovieRequest">
+                Send request
+            </ion-button>
+        </ion-content>
+    </ion-modal>
+
 </template>
 
 <script setup>
@@ -55,9 +95,17 @@ import {
     IonTitle,
     IonContent,
     IonSearchbar,
-    IonProgressBar
+    IonProgressBar,
+    IonButtons,
+    IonButton,
+    IonIcon,
+    IonModal,
+    IonItem,
+    IonInput,
+    toastController
 } from "@ionic/vue";
 
+import { addOutline } from "ionicons/icons";
 import { ref, computed } from "vue";
 import axios from "axios";
 import noPoster from "@/assets/posters/no-poster.png";
@@ -73,15 +121,29 @@ const API =
 const TMDB_POPULAR_API =
     "https://api.themoviedb.org/3/movie/popular?api_key=6bc179f67d4901690b3b039f05b87254";
 
+const REQUEST_API =
+    "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/movie_requests.php";
+
 
 /* state */
 const query = ref("");
 const loading = ref(false);
 const popularMovies = ref([]);
+const user = JSON.parse(localStorage.getItem("user") || "null");
 
 const results = ref({
     internal: [],
     tmdb: []
+});
+
+/* modal */
+const showRequestModal = ref(false);
+const sendingRequest = ref(false);
+
+const requestForm = ref({
+    title: "",
+    year: "",
+    director: ""
 });
 
 /* list */
@@ -178,6 +240,61 @@ async function loadPopularMovies() {
 onMounted(() => {
     loadPopularMovies();
 });
+
+/* requests */
+function openRequestModal() {
+    if (!user) {
+        router.push({ name: "Login" });
+        return;
+    }
+
+    showRequestModal.value = true;
+}
+
+
+function closeRequestModal() {
+    showRequestModal.value = false;
+    requestForm.value = {
+        title: "",
+        year: "",
+        director: ""
+    };
+}
+
+async function sendMovieRequest() {
+    if (!user || !requestForm.value.title) return;
+
+    sendingRequest.value = true;
+
+    try {
+        await axios.post(REQUEST_API, {
+            title: requestForm.value.title,
+            year: requestForm.value.year || null,
+            director: requestForm.value.director || null,
+            user_id: user.id
+        });
+
+
+
+        showToast("Movie request sent successfully");
+        closeRequestModal();
+
+    } catch (e) {
+        console.error(e);
+        showToast("Failed to send request");
+    } finally {
+        sendingRequest.value = false;
+    }
+}
+
+async function showToast(message) {
+    const toast = await toastController.create({
+        message,
+        duration: 1600,
+        position: "bottom"
+    });
+    await toast.present();
+}
 
 
 </script>
