@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
-        <ion-title class="center-title">CINELOG</ion-title>
+        <ion-title class="app-title">CINELOG</ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -30,16 +30,17 @@
           <span v-else>Login</span>
         </ion-button>
 
-        <!-- guest mode -->
-        <ion-button expand="block" fill="clear" color="medium" @click="continueAsGuest">
-          Continue as guest
-        </ion-button>
+        <div>
+          <!-- create account -->
+          <ion-button expand="block" fill="clear" color="medium" @click="goRegister">
+            Create an account 
+          </ion-button>
+          <!-- guest mode -->
+          <ion-button expand="block" fill="clear" color="light" @click="continueAsGuest">
+            Continue as guest
+          </ion-button>
 
-        <!-- create account -->
-        <ion-button expand="block" fill="clear" color="light" @click="goRegister">
-          Create an account
-        </ion-button>
-
+        </div>
       </div>
     </ion-content>
   </ion-page>
@@ -127,39 +128,91 @@ function goRegister() {
 <style scoped>
 /* background */
 ion-content::part(background) {
-  --background: #000;
+  --background: radial-gradient(circle at top,
+      #111 0%,
+      #000 60%);
 }
 
+/* title app */
+.app-title {
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 10px;
+}
+
+/* header */
 ion-toolbar {
-  --background: #000;
+  --background: transparent;
   --color: white;
+  backdrop-filter: blur(8px);
 }
 
-/* layout */
+/* container */
 .login-container {
-  max-width: 400px;
+  max-width: 420px;
   margin: auto;
-  margin-top: 20vh;
+  margin-top: 18vh;
+
+  padding: 22px;
+  border-radius: 22px;
+
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
+/* title */
 .login-title {
   color: white;
   text-align: center;
-  font-size: 1.8rem;
+  font-size: 1.9rem;
   font-weight: 700;
+  letter-spacing: 0.4px;
+  margin-bottom: 6px;
+}
+
+/* inputs */
+ion-input {
+  --background: rgba(255, 255, 255, 0.04);
+  --border-radius: 16px;
+  --padding-start: 14px;
+  --padding-end: 14px;
+
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 /* error */
 .error-text {
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  color: #ff6b6b;
+  margin-top: 4px;
 }
 
-/* button */
+/* login button */
 .login-btn {
-  margin-top: 10px;
+  margin-top: 14px;
+
+  --border-radius: 16px;
+  --background: linear-gradient(135deg, #ff4d4d, #ff1f1f);
+  --color: white;
+
+  font-weight: 600;
+  letter-spacing: 0.3px;
+
+  box-shadow: 0 6px 20px rgba(255, 77, 77, 0.35);
+}
+
+/* disabled state */
+.login-btn.button-disabled {
+  opacity: 0.6;
+  box-shadow: none;
 }
 </style>

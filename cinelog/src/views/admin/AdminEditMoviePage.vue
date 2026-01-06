@@ -57,7 +57,7 @@
           <!-- actions -->
           <div class="actions">
             <ion-button expand="block" class="primary" :disabled="saving" @click="save">
-              {{ saveLabel }}
+              Save
             </ion-button>
 
             <ion-button expand="block" fill="outline" class="secondary" @click="cancel">
@@ -218,8 +218,15 @@ async function save() {
         created_by: user.id
       });
 
-      const createdMovieId = addRes.data?.movie_id;
-      if (!createdMovieId) throw new Error("movie_id missing");
+      if (addRes.data?.status === 409) {
+        // movie already exists -> we still get movie_id 
+      }
+
+      const createdMovieId = addRes.data?.data?.movie_id;
+      if (!createdMovieId) {
+        console.error("ADD MOVIE RESPONSE:", addRes.data);
+        throw new Error("movie_id missing");
+      }
 
       await axios.put(REQUESTS_API, {
         id: form.request_id,
