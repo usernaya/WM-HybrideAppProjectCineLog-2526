@@ -70,7 +70,7 @@ const loading = ref(true);
 const API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/movies.php";
 
-/* load movies (ionic safe) */
+/* load movies in ionic safe way (had loading errors without onIonViewWillEnter) */
 onIonViewWillEnter(loadMovies);
 
 async function loadMovies() {

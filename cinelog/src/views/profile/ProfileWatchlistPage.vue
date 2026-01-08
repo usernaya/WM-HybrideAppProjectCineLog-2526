@@ -50,19 +50,19 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 
-/* router */
+// router
 const router = useRouter();
 
-/* state */
+// state
 const user = JSON.parse(localStorage.getItem("user"));
 const loading = ref(true);
 const watchlist = ref([]);
 
-/* api */
+// api
 const WATCHLIST_API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/watchlist.php";
 
-/* load watchlist */
+// load watchlist
 async function loadWatchlist() {
   try {
     const res = await axios.get(WATCHLIST_API, {
@@ -77,7 +77,7 @@ async function loadWatchlist() {
   }
 }
 
-/* open movie details */
+// open movie details
 function openMovie(movie) {
   localStorage.setItem("selected_movie", JSON.stringify({
     ...movie,
@@ -92,7 +92,7 @@ function openMovie(movie) {
   });
 }
 
-/* lifecycle */
+// load on mount
 onMounted(loadWatchlist);
 </script>
 

@@ -11,14 +11,14 @@
 
         <ion-title>Profile</ion-title>
 
-        <!-- menu enkel op eigen profiel -->
+        <!-- menu only on own profile -->
         <ion-buttons slot="end" v-if="isOwnProfile">
           <ion-button id="profile-menu-btn" fill="clear">
             <ion-icon :icon="ellipsisVertical" />
           </ion-button>
         </ion-buttons>
 
-        <!-- popover menu (alleen eigen profiel) -->
+        <!-- popover menu (only own profile) -->
         <ion-popover v-if="isOwnProfile" trigger="profile-menu-btn" trigger-action="click" :dismiss-on-select="true"
           side="bottom" alignment="end">
           <ion-content class="ion-no-padding">
@@ -197,14 +197,14 @@ import axios from "axios";
 import { ref, computed, onMounted, watch } from "vue";
 import { onIonViewWillEnter } from "@ionic/vue";
 
-/* router */
+// router
 const router = useRouter();
 const route = useRoute();
 
-/* auth */
+// logged in user
 const loggedUser = JSON.parse(localStorage.getItem("user") || "null");
 
-/* state */
+// state
 const loading = ref(true);
 const profile = ref(null);
 const tabs = ["Profile", "Diary", "Watchlist"];
@@ -212,7 +212,7 @@ const activeTab = ref("Profile");
 const relation = ref([]);
 const loadingFollow = ref(false);
 
-/* api */
+// api
 const PROFILE_API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/inc/profile/get_profile.php";
 
@@ -222,7 +222,7 @@ const API_BASE =
 const FRIENDS_API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/friends.php";
 
-/* profile id logic */
+// profile user id
 const profileUserId = computed(() => {
   if (route.name === "UserProfile") {
     const pid = route.params.id;
@@ -231,13 +231,15 @@ const profileUserId = computed(() => {
   return loggedUser?.id ?? null;
 });
 
+// is own profile
 const isOwnProfile = computed(() => {
   return profileUserId.value === (loggedUser?.id ?? null);
 });
 
+// is admin
 const isAdmin = computed(() => loggedUser?.role === "admin");
 
-/* computed helpers */
+// computed profile data
 const initials = computed(() => {
   const u = profile.value?.user;
   if (!u?.firstname || !u?.lastname) return "?";
@@ -257,7 +259,7 @@ const avatarSrc = computed(() => {
     : API_BASE + String(a).replace(/^\/+/, "");
 });
 
-/* relation logic */
+// relation type
 const relationType = computed(() => {
   if (!Array.isArray(relation.value) || relation.value.length === 0) {
     return "none";
@@ -294,6 +296,7 @@ const relationType = computed(() => {
   return "none";
 });
 
+// follow button label
 const followLabel = computed(() => {
   switch (relationType.value) {
     case "none":
@@ -312,7 +315,7 @@ const followLabel = computed(() => {
   }
 });
 
-/* follow handler */
+// handle follow button click
 async function handleFollowAction() {
   console.log("CLICK", relationType.value);
 
@@ -334,7 +337,7 @@ async function handleFollowAction() {
 }
 
 
-/* navigation */
+// navigation
 function goFollowers() {
   router.push("/profile/followers");
 }
@@ -364,7 +367,7 @@ function goBack() {
   router.back();
 }
 
-/* load profile */
+// load profile
 async function loadProfile() {
   const id = profileUserId.value;
 
@@ -391,6 +394,7 @@ async function loadProfile() {
   await loadRelation();
 }
 
+// load relation
 async function loadRelation() {
   if (!loggedUser || isOwnProfile.value || !profileUserId.value) return;
 
@@ -406,7 +410,7 @@ async function loadRelation() {
   relation.value = res.data.data ?? [];
 }
 
-/* follow actions */
+// send follow request
 async function sendFollow() {
   console.log("SEND FOLLOW");
 
@@ -428,7 +432,7 @@ async function sendFollow() {
   }
 }
 
-
+// accept follow request
 async function acceptFollow() {
   if (loadingFollow.value) return;
 
@@ -440,13 +444,13 @@ async function acceptFollow() {
       user2_id: loggedUser.id
     });
 
-    await loadRelation(); 
+    await loadRelation();
   } finally {
     loadingFollow.value = false;
   }
 }
 
-
+// remove friend / unfollow
 async function removeFriend() {
   if (loadingFollow.value) return;
 
@@ -460,13 +464,13 @@ async function removeFriend() {
       }
     });
 
-    await loadRelation(); 
+    await loadRelation();
   } finally {
     loadingFollow.value = false;
   }
 }
 
-/* lifecycle */
+// lifecycle to load profile
 onMounted(() => {
   loadProfile();
 });
@@ -487,6 +491,7 @@ watch(
     }
   }
 );
+
 </script>
 
 
@@ -830,5 +835,4 @@ watch(
   opacity: .6;
   cursor: not-allowed;
 }
-
 </style>

@@ -33,7 +33,7 @@
         <div>
           <!-- create account -->
           <ion-button expand="block" fill="clear" color="medium" @click="goRegister">
-            Create an account 
+            Create an account
           </ion-button>
           <!-- guest mode -->
           <ion-button expand="block" fill="clear" color="light" @click="continueAsGuest">
@@ -64,7 +64,7 @@ import { useRouter } from "vue-router";
 import axios from "axios";
 import { useAuth } from "@/composables/useAuth";
 
-/* state */
+// router
 const router = useRouter();
 const auth = useAuth();
 
@@ -74,11 +74,11 @@ const password = ref("");
 const loading = ref(false);
 const errorMessage = ref("");
 
-/* api endpoint */
+// api
 const LOGIN_API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/inc/auth/login.php";
 
-/* login handler */
+// actions
 async function handleLogin() {
   errorMessage.value = "";
 
@@ -99,7 +99,7 @@ async function handleLogin() {
       throw new Error("Login failed");
     }
 
-    // central login state
+    // save user data
     auth.login(res.data.data);
 
     // redirect to home
@@ -112,13 +112,13 @@ async function handleLogin() {
   }
 }
 
-/* guest mode */
+// continue as guest
 function continueAsGuest() {
   auth.loginAsGuest();
   router.replace("/tabs/tab1");
 }
 
-/* go to register page */
+// go to register page
 function goRegister() {
   router.push({ name: "Register" });
 }

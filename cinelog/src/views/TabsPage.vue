@@ -39,26 +39,12 @@ import {
   IonIcon
 } from "@ionic/vue";
 
-import { useRouter } from "vue-router";
-
 import {
-  home,
   homeOutline,
-  search,
   searchOutline,
-  chatbubbles,
   chatbubblesOutline,
-  person,
   personOutline
 } from "ionicons/icons";
-
-const router = useRouter();
-
-function go(path) {
-  if (router.currentRoute.value.fullPath !== path) {
-    router.push(path);
-  }
-}
 </script>
 
 

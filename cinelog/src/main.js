@@ -3,7 +3,7 @@ import App from './App.vue';
 import router from './router';
 import { IonicVue } from '@ionic/vue';
 
-/* 🔹 Axios toevoegen volgens de Odisee cursus */
+/* Axios toevoegen */
 import axios from 'axios';
 import VueAxios from 'vue-axios';
 

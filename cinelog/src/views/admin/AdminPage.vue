@@ -89,10 +89,10 @@ import {
 
 import { useRouter } from "vue-router";
 
-/* router */
+// router
 const router = useRouter();
 
-/* navigation */
+// navigation functions
 function goAddMovie() {
   router.push({ name: "AdminAddMovie" });
 }

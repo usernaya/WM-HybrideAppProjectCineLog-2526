@@ -60,6 +60,7 @@ if (!user) {
   throw new Error("Not authenticated");
 }
 
+// api
 const FRIENDS_API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/friends.php";
 
@@ -69,19 +70,21 @@ const API_BASE =
 const loading = ref(true);
 const users = ref([]);
 
-/* followers | following */
+// mode: followers / following
 const mode = computed(() => route.params.mode);
 
 const title = computed(() =>
   mode.value === "followers" ? "Followers" : "Following"
 );
 
+// avatar url
 function avatar(url) {
   return url.startsWith("http")
     ? url
     : API_BASE + url.replace(/^\/+/, "");
 }
 
+// load users
 async function loadUsers() {
   loading.value = true;
 
@@ -110,12 +113,12 @@ async function loadUsers() {
   loading.value = false;
 }
 
-
+// open user profile
 function openProfile(id) {
   router.push(`/user/${id}`);
 }
-
 onMounted(loadUsers);
+
 </script>
 
 <style scoped>

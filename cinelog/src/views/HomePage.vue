@@ -9,7 +9,7 @@
 
     <ion-content :fullscreen="true">
 
-      <!-- refresher om automatisch te verversen -->
+      <!-- refresher to automatically refresh -->
       <ion-refresher slot="fixed" @ionRefresh="refreshPage">
         <ion-refresher-content pulling-text="Pull to refresh" refreshing-spinner="circles" />
       </ion-refresher>
@@ -98,7 +98,7 @@ const router = useRouter();
 const BASE =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/inc/movies";
 
-/* state */
+// state
 const trending = ref([]);
 const popular = ref([]);
 const topRated = ref([]);
@@ -110,7 +110,7 @@ const loadingGrid = ref(true);
 const selectedCategory = ref("all");
 const selectedGenre = ref("all");
 
-/* genres */
+// genres list
 const genres = [
   "Action", "Adventure", "Animation", "Comedy", "Crime", "Documentary", "Drama",
   "Family", "Fantasy", "History", "Horror", "Music", "Mystery", "Romance",
@@ -124,7 +124,7 @@ const tmdbGenreMap = {
   53: "Thriller", 10752: "War", 37: "Western"
 };
 
-/* mappers */
+// mapping functions
 function mapInternalMovie(m) {
   return {
     id: m.id,
@@ -155,7 +155,7 @@ function mapTmdbMovie(m, category) {
   };
 }
 
-/* load data */
+// load top sections
 async function loadTopSections() {
   try {
     const res = await axios.get(`${BASE}/get_all.php`);
@@ -187,7 +187,7 @@ async function loadPopularTopRated() {
   }
 }
 
-/* refresh */
+// refresh page
 async function refreshPage(event) {
   loadingTop.value = true;
   loadingGrid.value = true;
@@ -205,7 +205,7 @@ async function refreshPage(event) {
   event.target.complete();
 }
 
-/* computed */
+// combined for grid
 const allMoviesForGrid = computed(() => {
   const seen = new Set();
   const list = [];
@@ -238,7 +238,7 @@ const filteredMovies = computed(() => {
   return list;
 });
 
-/* open details */
+// open movie details
 function openDetail(movie) {
   localStorage.setItem("selected_movie", JSON.stringify(movie));
 
@@ -248,7 +248,7 @@ function openDetail(movie) {
   });
 }
 
-/* init */
+// initial load
 loadTopSections();
 loadPopularTopRated();
 </script>
@@ -324,7 +324,7 @@ ion-toolbar {
   font-size: 0.8rem;
 }
 
-/* filters (option b: outline style) */
+/* filters */
 .filter-row {
   display: flex;
   gap: 10px;

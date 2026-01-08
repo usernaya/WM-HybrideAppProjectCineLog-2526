@@ -1,9 +1,9 @@
 // src/composables/useEventBus.js
 import { onUnmounted } from "vue";
 
-/* bus event for inter-component communication */
+// bus event for inter-component communication
 
-const listeners = new Map(); // eventName -> set of handlers
+const listeners = new Map(); // eventName: set of handlers
 
 function getSet(eventName) {
   if (!listeners.has(eventName)) {
@@ -37,7 +37,7 @@ export function useEventBus() {
   return { emit, on };
 }
 
-/* helper for vue components to auto-unsubscribe on unmount */
+// helper to auto-unsubscribe on unmount
 export function useBusListener(eventName, handler) {
   const bus = useEventBus();
   const off = bus.on(eventName, handler);

@@ -100,19 +100,20 @@ const loading = ref(true);
 
 const user = JSON.parse(localStorage.getItem("user") || "null");
 
+// api
 const MOVIES_API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/movies.php";
 
 const REQUESTS_API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/movie_requests.php";
 
-/* opening page from adminRequestPage */
+// opening page from adminRequestPage 
 const isApproveMode = computed(() => route.name === "AdminApproveRequest");
 
-/* id in url */
+// id in url
 const idParam = computed(() => route.params.id);
 
-/* form */
+// form state
 const form = reactive({
   request_id: null,  // only in approve mode
   movie_id: null,    // only in edit mode
@@ -126,7 +127,7 @@ const form = reactive({
   poster_url: ""
 });
 
-/* load data */
+// load data
 onIonViewWillEnter(async () => {
   await prefill();
 });
@@ -140,7 +141,7 @@ async function prefill() {
       return;
     }
 
-    /* case 1: if approve request mode */
+    // case 1: if approve request mode
     if (isApproveMode.value) {
       const res = await axios.get(REQUESTS_API, {
         params: { id: idParam.value }
@@ -165,7 +166,7 @@ async function prefill() {
       return;
     }
 
-    /* case 2: if edit movie mode */
+    // case 2: edit movie mode
     const res = await axios.get(MOVIES_API, {
       params: { id: idParam.value }
     });
@@ -194,7 +195,7 @@ async function prefill() {
   }
 }
 
-/* save */
+// save
 async function save() {
   if (!user?.id) {
     await showToast("Not logged in");
@@ -205,7 +206,7 @@ async function save() {
   saving.value = true;
 
   try {
-    /* approve mode: POST movie + PUT request */
+    // approve mode: POST movie + PUT request
     if (isApproveMode.value) {
       const addRes = await axios.post(MOVIES_API, {
         title: form.title,
@@ -240,7 +241,7 @@ async function save() {
       return;
     }
 
-    /* edit mode: PUT movie */
+    // edit mode: PUT movie
     await axios.put(MOVIES_API, {
       id: form.movie_id,
       title: form.title,
@@ -262,6 +263,7 @@ async function save() {
   }
 }
 
+// cancel and go back
 function cancel() {
   if (isApproveMode.value) {
     router.push("/tabs/admin/requests");

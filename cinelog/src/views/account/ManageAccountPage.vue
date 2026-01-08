@@ -12,7 +12,7 @@
 
     <ion-content class="ion-padding">
       <div class="card">
-        <!-- AVATAR -->
+        <!-- avatar -->
         <div class="avatar-section">
           <div class="avatar" @click="triggerFile">
             <img v-if="preview || form.avatar_url" :src="preview || form.avatar_url" />
@@ -25,7 +25,7 @@
         <!-- hidden file input -->
         <input ref="fileInput" type="file" accept="image/*" hidden @change="onFileChange" />
 
-        <!-- FORM -->
+        <!-- form -->
         <ion-item class="field">
           <ion-input label="First name" label-placement="stacked" v-model="form.firstname" />
         </ion-item>
@@ -61,7 +61,7 @@
           Change password
         </ion-button>
 
-        <!-- CHANGE PASSWORD MODAL -->
+        <!-- change password modal -->
         <ion-modal :is-open="showPasswordModal" @didDismiss="closePasswordModal">
           <ion-header>
             <ion-toolbar>
@@ -192,6 +192,7 @@ const UPDATE_API =
 
 const CHANGE_PASSWORD_API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/inc/profile/change_password.php";
+
 /* load profile */
 onMounted(async () => {
   try {

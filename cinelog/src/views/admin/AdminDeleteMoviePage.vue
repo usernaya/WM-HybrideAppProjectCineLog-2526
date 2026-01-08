@@ -100,23 +100,6 @@ async function loadMovies() {
 }
 
 /* delete */
-async function confirmDelete(movie) {
-  const alert = await alertController.create({
-    header: "Confirm delete",
-    message: `Are you sure you want to delete "${movie.title}"?`,
-    buttons: [
-      { text: "Cancel", role: "cancel" },
-      {
-        text: "Delete",
-        role: "destructive",
-        handler: () => deleteMovie(movie.id)
-      }
-    ]
-  });
-
-  await alert.present();
-}
-
 async function deleteMovie(id) {
   if (!id) return;
 
@@ -136,7 +119,24 @@ async function deleteMovie(id) {
   }
 }
 
-  /* toast */
+async function confirmDelete(movie) {
+  const alert = await alertController.create({
+    header: "Confirm delete",
+    message: `Are you sure you want to delete "${movie.title}"?`,
+    buttons: [
+      { text: "Cancel", role: "cancel" },
+      {
+        text: "Delete",
+        role: "destructive",
+        handler: () => deleteMovie(movie.id)
+      }
+    ]
+  });
+
+  await alert.present();
+}
+
+/* toast */
 async function showToast(message) {
   const toast = await toastController.create({
     message,

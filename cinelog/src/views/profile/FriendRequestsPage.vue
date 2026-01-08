@@ -73,6 +73,7 @@ if (!user) {
   throw new Error("User not logged in");
 }
 
+// api
 const FRIENDS_API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/friends.php";
 
@@ -80,10 +81,11 @@ const API_BASE =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/";
 
 
-
+// state
 const loading = ref(true);
 const items = ref([]);
 
+// load requests
 async function loadRequests() {
   loading.value = true;
 
@@ -104,6 +106,7 @@ async function accept(fromUserId) {
   loadRequests();
 }
 
+// decline request
 async function remove(fromUserId) {
   await axios.delete(FRIENDS_API, {
     data: {
@@ -114,8 +117,8 @@ async function remove(fromUserId) {
 
   loadRequests();
 }
-
 onMounted(loadRequests);
+
 </script>
 
 <style scoped>
@@ -177,13 +180,11 @@ onMounted(loadRequests);
   align-items: center;
   padding: 14px;
   border-radius: 18px;
-  background: linear-gradient(
-    180deg,
-    rgba(255,255,255,.08),
-    rgba(255,255,255,.03)
-  );
-  border: 1px solid rgba(255,255,255,.08);
-  box-shadow: 0 12px 30px rgba(0,0,0,.5);
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, .08),
+      rgba(255, 255, 255, .03));
+  border: 1px solid rgba(255, 255, 255, .08);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .5);
 }
 
 /* user */
@@ -201,7 +202,7 @@ onMounted(loadRequests);
 }
 
 .avatar.fallback {
-  background: rgba(255,255,255,.12);
+  background: rgba(255, 255, 255, .12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -230,7 +231,7 @@ onMounted(loadRequests);
   border: none;
   cursor: pointer;
   transition: all .2s ease;
-  box-shadow: 0 6px 14px rgba(0,0,0,.4);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, .4);
 }
 
 /* accept */
@@ -242,8 +243,8 @@ onMounted(loadRequests);
 /* decline */
 .action-pill.decline {
   background: transparent;
-  color: rgba(255,255,255,.6);
-  border: 1px solid rgba(255,255,255,.25);
+  color: rgba(255, 255, 255, .6);
+  border: 1px solid rgba(255, 255, 255, .25);
 }
 
 /* hover */
@@ -251,5 +252,4 @@ onMounted(loadRequests);
   transform: translateY(-1px);
   opacity: .95;
 }
-
 </style>

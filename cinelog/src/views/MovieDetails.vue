@@ -11,15 +11,15 @@
 
     <ion-content class="movie-content">
 
-      <!-- LOADING -->
+      <!-- loading -->
       <div v-if="loading" class="center">
         <ion-progress-bar type="indeterminate" color="danger" />
       </div>
 
-      <!-- MOVIE -->
+      <!-- movie -->
       <div v-else-if="movie">
 
-        <!-- HERO -->
+        <!-- hero -->
         <div class="hero">
           <img :src="posterSrc" class="poster" />
 
@@ -29,26 +29,16 @@
               ★ {{ avgRating }} · {{ reviews.length }} reviews
             </p>
 
-            <!-- WATCHLIST -->
-            <ion-button
-              v-if="user"
-              class="watchlist-btn"
-              color="danger"
-              fill="outline"
-              size="small"
-              :disabled="watchlistLoading"
-              @click="toggleWatchlist"
-            >
-              <ion-icon
-                :icon="inWatchlist ? heart : heartOutline"
-                slot="start"
-              />
+            <!-- watchlist -->
+            <ion-button v-if="user" class="watchlist-btn" color="danger" fill="outline" size="small"
+              :disabled="watchlistLoading" @click="toggleWatchlist">
+              <ion-icon :icon="inWatchlist ? heart : heartOutline" slot="start" />
               {{ inWatchlist ? "Remove from watchlist" : "Add to watchlist" }}
             </ion-button>
           </div>
         </div>
 
-        <!-- OVERVIEW -->
+        <!-- overview -->
         <div class="overview">
           <h3>Overview</h3>
           <p v-if="movie.description">
@@ -59,32 +49,18 @@
           </p>
         </div>
 
-        <!-- RATE -->
+        <!-- rate -->
         <div v-if="user" class="rate-card">
           <h3>Rate this movie</h3>
 
           <div class="stars-input">
-            <ion-icon
-              v-for="n in 5"
-              :key="n"
-              :icon="n <= myStars ? star : starOutline"
-              class="rate-star"
-              @click="myStars = n"
-            />
+            <ion-icon v-for="n in 5" :key="n" :icon="n <= myStars ? star : starOutline" class="rate-star"
+              @click="myStars = n" />
           </div>
 
-          <ion-textarea
-            v-model="myReview"
-            placeholder="Write your review..."
-            auto-grow
-          />
+          <ion-textarea v-model="myReview" placeholder="Write your review..." auto-grow />
 
-          <ion-button
-            expand="block"
-            color="danger"
-            :disabled="submitting"
-            @click="submitReview"
-          >
+          <ion-button expand="block" color="danger" :disabled="submitting" @click="submitReview">
             Submit review
           </ion-button>
         </div>
@@ -93,13 +69,9 @@
           Login to rate and add movies to your watchlist
         </div>
 
-        <!-- REVIEWS -->
+        <!-- reviews -->
         <div class="reviews">
-          <div
-            v-for="r in reviews"
-            :key="r.id"
-            class="review-card"
-          >
+          <div v-for="r in reviews" :key="r.id" class="review-card">
             <div class="review-head">
               <span class="user">@{{ r.username }}</span>
               <span class="stars">★ {{ r.stars }}</span>
@@ -114,12 +86,8 @@
                 ❤️ {{ r.like_count }}
               </button>
 
-              <!-- DELETE (ONLY OWNER) -->
-              <button
-                v-if="user && r.user_id === user.id"
-                class="delete-btn"
-                @click="confirmDelete(r.id)"
-              >
+              <!-- delete (only owner) -->
+              <button v-if="user && r.user_id === user.id" class="delete-btn" @click="confirmDelete(r.id)">
                 Delete
               </button>
             </div>
@@ -127,19 +95,14 @@
         </div>
       </div>
 
-      <!-- NOT FOUND -->
+      <!-- not found -->
       <div v-else class="center">
         Movie not found
       </div>
 
-      <!-- DELETE CONFIRM -->
-      <ion-alert
-        :is-open="showDelete"
-        header="Delete review"
-        message="Ben je zeker dat je je review wil verwijderen?"
-        :buttons="deleteButtons"
-        @didDismiss="showDelete = false"
-      />
+      <!-- delete confirm -->
+      <ion-alert :is-open="showDelete" header="Delete review" message="Ben je zeker dat je je review wil verwijderen?"
+        :buttons="deleteButtons" @didDismiss="showDelete = false" />
 
     </ion-content>
   </ion-page>
@@ -166,10 +129,10 @@ import axios from "axios";
 import { star, starOutline, heart, heartOutline } from "ionicons/icons";
 import noPoster from "@/assets/posters/no-poster.png";
 
-/* auth */
+// user
 const user = JSON.parse(localStorage.getItem("user") || "null");
 
-/* state */
+// state
 const movie = ref(null);
 const reviews = ref([]);
 const loading = ref(true);
@@ -181,11 +144,11 @@ const myReview = ref("");
 const inWatchlist = ref(false);
 const watchlistLoading = ref(false);
 
-/* delete */
+// delete review
 const showDelete = ref(false);
 const reviewToDelete = ref(null);
 
-/* api */
+// api
 const REVIEWS_API =
   "https://anaseddaouodisee.be/WM-RESTfulAPIProjectCineLog-2526/api/reviews.php";
 const LIKES_API =
@@ -193,19 +156,19 @@ const LIKES_API =
 const WATCHLIST_API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/watchlist.php";
 
-/* poster */
+// computed
 const posterSrc = computed(() =>
   movie.value?.poster || movie.value?.poster_url || noPoster
 );
 
-/* average */
+// average
 const avgRating = computed(() => {
   if (!reviews.value.length) return "0.0";
   const sum = reviews.value.reduce((a, r) => a + Number(r.stars), 0);
   return (sum / reviews.value.length).toFixed(1);
 });
 
-/* load */
+// load
 async function loadMovie() {
   const stored = localStorage.getItem("selected_movie");
   if (!stored) return (loading.value = false);
@@ -225,7 +188,7 @@ async function loadReviews() {
   reviews.value = res.data.data ?? [];
 }
 
-/* submit */
+// submit
 async function submitReview() {
   if (!user || !myStars.value || submitting.value) return;
 
@@ -248,7 +211,7 @@ async function submitReview() {
   loadReviews();
 }
 
-/* like */
+// like
 async function toggleLike(r) {
   if (!user) return;
 
@@ -260,7 +223,7 @@ async function toggleLike(r) {
   loadReviews();
 }
 
-/* delete */
+// delete
 function confirmDelete(id) {
   reviewToDelete.value = id;
   showDelete.value = true;
@@ -284,7 +247,7 @@ const deleteButtons = [
   }
 ];
 
-/* watchlist */
+// watchlist
 async function checkWatchlist() {
   if (!user || !movie.value) return;
 
@@ -372,7 +335,7 @@ onMounted(loadMovie);
   margin: 0 16px 24px;
   padding: 18px;
   border-radius: 20px;
-  background: rgba(255,255,255,0.06);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .stars-input {
@@ -398,7 +361,7 @@ onMounted(loadMovie);
 .review-card {
   padding: 14px;
   border-radius: 18px;
-  background: rgba(255,255,255,0.06);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .review-head {

@@ -100,7 +100,7 @@ const form = reactive({
   poster_url: ""
 });
 
-  /* api */
+/* api */
 const API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/movies.php";
 
@@ -153,7 +153,7 @@ ion-content::part(background) {
   color: white;
 }
 
-/* CARD */
+/* card */
 .card {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 18px;
@@ -175,14 +175,14 @@ ion-content::part(background) {
   color: rgba(255, 255, 255, 0.7);
 }
 
-/* INPUTS */
+/* inputs */
 .field {
   --background: rgba(255, 255, 255, 0.04);
   --border-radius: 14px;
   margin-bottom: 10px;
 }
 
-/* ACTIONS */
+/* actions */
 .actions {
   display: flex;
   flex-direction: column;

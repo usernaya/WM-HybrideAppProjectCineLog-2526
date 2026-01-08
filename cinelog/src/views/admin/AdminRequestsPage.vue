@@ -94,9 +94,10 @@ import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 
-/* state */
+// router
 const router = useRouter();
 
+// state
 const loading = ref(true);
 const processing = ref(false);
 const requests = ref([]);
@@ -104,11 +105,11 @@ const activeTab = ref("pending");
 
 const user = JSON.parse(localStorage.getItem("user") || "null");
 
-/* api */
+// api
 const API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/movie_requests.php";
 
-/* computed */
+// computed lists
 const pendingRequests = computed(() =>
   requests.value.filter(r => r.status === "pending")
 );
@@ -123,9 +124,7 @@ const activeList = computed(() =>
     : handledRequests.value
 );
 
-/* load */
-onMounted(loadRequests);
-
+// load requests
 async function loadRequests() {
   loading.value = true;
   try {
@@ -138,8 +137,9 @@ async function loadRequests() {
     loading.value = false;
   }
 }
+onMounted(loadRequests);
 
-/* actions */
+// actions
 function approve(req) {
   router.push({
     name: "AdminApproveRequest",
@@ -147,23 +147,7 @@ function approve(req) {
   });
 }
 
-async function confirmReject(id) {
-  const alert = await alertController.create({
-    header: "Reject request",
-    message: "Are you sure you want to reject this request?",
-    buttons: [
-      { text: "Cancel", role: "cancel" },
-      {
-        text: "Reject",
-        role: "destructive",
-        handler: () => reject(id)
-      }
-    ]
-  });
-
-  await alert.present();
-}
-
+// reject
 async function reject(id) {
   if (!user?.id) {
     showToast("Not logged in");
@@ -189,6 +173,24 @@ async function reject(id) {
     processing.value = false;
   }
 }
+
+async function confirmReject(id) {
+  const alert = await alertController.create({
+    header: "Reject request",
+    message: "Are you sure you want to reject this request?",
+    buttons: [
+      { text: "Cancel", role: "cancel" },
+      {
+        text: "Reject",
+        role: "destructive",
+        handler: () => reject(id)
+      }
+    ]
+  });
+
+  await alert.present();
+}
+
 
 /* helpers */
 function formatDate(value) {

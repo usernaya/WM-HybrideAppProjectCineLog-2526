@@ -11,7 +11,7 @@
 
     <ion-content class="movie-content">
 
-      <!-- HERO -->
+      <!-- hero -->
       <div v-if="movie" class="hero">
         <img :src="movie.poster_url" class="hero-poster" />
 
@@ -24,25 +24,16 @@
         </div>
       </div>
 
-      <!-- RATE -->
+      <!-- rate -->
       <div v-if="user" class="rate-card">
         <h3>Rate this movie</h3>
 
         <div class="stars-input">
-          <ion-icon
-            v-for="n in 5"
-            :key="n"
-            :icon="n <= myStars ? star : starOutline"
-            class="rate-star"
-            @click="myStars = n"
-          />
+          <ion-icon v-for="n in 5" :key="n" :icon="n <= myStars ? star : starOutline" class="rate-star"
+            @click="myStars = n" />
         </div>
 
-        <ion-textarea
-          v-model="myReview"
-          placeholder="Write your review..."
-          auto-grow
-        />
+        <ion-textarea v-model="myReview" placeholder="Write your review..." auto-grow />
 
         <ion-button expand="block" color="danger" @click="submitReview">
           Submit review
@@ -53,20 +44,16 @@
         Login to rate and write reviews
       </div>
 
-      <!-- REVIEWS -->
+      <!-- reviews -->
       <div class="reviews-list">
         <div v-for="r in reviews" :key="r.id" class="review-card">
 
-          <!-- HEADER -->
+          <!-- header -->
           <div class="review-header">
             <span class="user">@{{ r.username }}</span>
 
-            <!-- DELETE (OWNER ONLY) -->
-            <button
-              v-if="user && r.user_id === user.id"
-              class="delete-text-btn"
-              @click="openDeleteConfirm(r.id)"
-            >
+            <!-- delete (owner only) -->
+            <button v-if="user && r.user_id === user.id" class="delete-text-btn" @click="openDeleteConfirm(r.id)">
               Delete
             </button>
           </div>
@@ -85,14 +72,10 @@
         </div>
       </div>
 
-      <!-- DELETE CONFIRM -->
-      <ion-alert
-        :is-open="showDeleteAlert"
-        header="Delete review"
-        message="Ben je zeker dat je je review wil verwijderen?"
-        :buttons="deleteButtons"
-        @didDismiss="showDeleteAlert = false"
-      />
+      <!-- delete confirm -->
+      <ion-alert :is-open="showDeleteAlert" header="Delete review"
+        message="Ben je zeker dat je je review wil verwijderen?" :buttons="deleteButtons"
+        @didDismiss="showDeleteAlert = false" />
 
     </ion-content>
   </ion-page>
@@ -118,31 +101,31 @@ import { useRoute } from "vue-router";
 import axios from "axios";
 import { star, starOutline } from "ionicons/icons";
 
-/* route */
+// route
 const route = useRoute();
 const movieId = route.params.id;
 
-/* auth */
+// auth
 const user = JSON.parse(localStorage.getItem("user") || "null");
 
-/* state */
+// state
 const movie = ref(null);
 const reviews = ref([]);
 const myStars = ref(0);
 const myReview = ref("");
 
-/* delete confirm */
+// delete alert
 const showDeleteAlert = ref(false);
 const reviewToDelete = ref(null);
 
-/* api */
+// api
 const REVIEWS_API =
   "https://anaseddaouodisee.be/WM-RESTfulAPIProjectCineLog-2526/api/reviews.php";
 
 const LIKE_API =
   "https://anaseddaouodisee.be/WM-RESTfulAPIProjectCineLog-2526/api/likes.php";
 
-/* load */
+// load data
 async function loadData() {
   const res = await axios.get(REVIEWS_API, {
     params: { movie_id: movieId }
@@ -158,14 +141,14 @@ async function loadData() {
   }
 }
 
-/* avg rating */
+// average rating
 const avgRating = computed(() => {
   if (!reviews.value.length) return "0.0";
   const sum = reviews.value.reduce((a, r) => a + Number(r.stars), 0);
   return (sum / reviews.value.length).toFixed(1);
 });
 
-/* submit */
+// submit review
 async function submitReview() {
   if (!user || !myStars.value) return;
 
@@ -181,12 +164,13 @@ async function submitReview() {
   loadData();
 }
 
-/* delete */
+// delete review
 function openDeleteConfirm(id) {
   reviewToDelete.value = id;
   showDeleteAlert.value = true;
 }
 
+// delete buttons
 const deleteButtons = [
   { text: "Cancel", role: "cancel" },
   {
@@ -205,7 +189,7 @@ const deleteButtons = [
   }
 ];
 
-/* like */
+// toggle like
 async function toggleLike(r) {
   if (!user) return;
 
@@ -226,7 +210,7 @@ onMounted(loadData);
   color: white;
 }
 
-/* HERO */
+/* hero */
 .hero {
   display: flex;
   gap: 18px;
@@ -244,12 +228,12 @@ onMounted(loadData);
   color: #f5c518;
 }
 
-/* RATE */
+/* rate */
 .rate-card {
   margin: 0 16px 24px;
   padding: 18px;
   border-radius: 20px;
-  background: rgba(255,255,255,0.06);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .stars-input {
@@ -264,7 +248,7 @@ onMounted(loadData);
   cursor: pointer;
 }
 
-/* REVIEWS */
+/* reviews */
 .reviews-list {
   padding: 0 16px 24px;
   display: flex;
@@ -275,7 +259,7 @@ onMounted(loadData);
 .review-card {
   padding: 14px;
   border-radius: 18px;
-  background: rgba(255,255,255,0.06);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .review-header {
@@ -297,7 +281,7 @@ onMounted(loadData);
   margin: 6px 0;
 }
 
-/* ACTIONS */
+/* actions */
 .review-actions {
   margin-top: 6px;
 }
@@ -309,7 +293,7 @@ onMounted(loadData);
   cursor: pointer;
 }
 
-/* DELETE TEXT BUTTON (SOBER) */
+/* delete text button */
 .delete-text-btn {
   background: none;
   border: none;

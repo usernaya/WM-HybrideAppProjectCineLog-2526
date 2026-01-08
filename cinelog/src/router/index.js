@@ -2,15 +2,15 @@ import { createRouter, createWebHistory } from "@ionic/vue-router";
 import TabsPage from "@/views/TabsPage.vue";
 import { useAuth } from "@/composables/useAuth";
 
-/* routes */
+// route definitions
 const routes = [
-  /* root */
+  // redirect root to tabs
   {
     path: "/",
     redirect: "/tabs/tab1",
   },
 
-  /* tabs layout */
+  // tabs
   {
     path: "/tabs",
     component: TabsPage,
@@ -20,13 +20,13 @@ const routes = [
         redirect: "/tabs/tab1",
       },
 
-      /* home */
+      // home
       {
         path: "tab1",
         name: "Home",
         component: () => import("@/views/HomePage.vue"),
       },
-      /* search */
+      // search
       {
         path: "search",
         name: "Search",
@@ -38,15 +38,13 @@ const routes = [
         component: () => import("@/views/reviews/ReviewsPage.vue"),
       },
 
-      /* profile */
+      // profile
       {
         path: "profile",
         name: "Profile",
         component: () => import("@/views/profile/ProfilePage.vue"),
         meta: { requiresAuth: true },
       },
-      // buiten tabs, onder MovieReviews bv.
-
       {
         path: "profile/watchlist",
         name: "ProfileWatchlist",
@@ -61,7 +59,7 @@ const routes = [
         meta: { requiresAuth: true },
       },
 
-      /* admin */
+      // admin routes
       {
         path: "admin",
         name: "AdminPage",
@@ -117,8 +115,7 @@ const routes = [
       },
     ],
   },
-
-  /* movie details (outside tabs) */
+  // outside tabs
   {
     path: "/movie/:id",
     name: "MovieDetails",

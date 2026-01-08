@@ -8,7 +8,7 @@
 
     <ion-content class="page">
 
-      <!-- SORT -->
+      <!-- sort -->
       <div class="sort-bar">
         <ion-segment v-model="activeSort" @ionChange="loadReviews">
           <ion-segment-button value="recent">
@@ -20,74 +20,51 @@
         </ion-segment>
       </div>
 
-      <!-- LOADING -->
-      <ion-progress-bar
-        v-if="loading"
-        type="indeterminate"
-        color="danger"
-      />
+      <!-- loading -->
+      <ion-progress-bar v-if="loading" type="indeterminate" color="danger" />
 
-      <!-- EMPTY -->
+      <!-- empty -->
       <div v-else-if="items.length === 0" class="empty">
         No reviews yet
       </div>
 
-      <!-- FEED -->
+      <!-- feed -->
       <div v-else class="feed">
-        <article
-          v-for="r in items"
-          :key="r.id"
-          class="card"
-          @click="openMovie(r.movie_id)"
-        >
-          <!-- POSTER -->
+        <article v-for="r in items" :key="r.id" class="card" @click="openMovie(r.movie_id)">
+          <!-- poster -->
           <img class="poster" :src="r.poster" />
 
-          <!-- CONTENT -->
+          <!-- content -->
           <div class="body">
 
-            <!-- MOVIE + STARS -->
+            <!-- movie + stars -->
             <div class="top">
               <h3 class="movie">{{ r.movieTitle }}</h3>
 
               <div class="stars">
-                <ion-icon
-                  v-for="i in 5"
-                  :key="i"
-                  :icon="i <= r.stars ? star : starOutline"
-                />
+                <ion-icon v-for="i in 5" :key="i" :icon="i <= r.stars ? star : starOutline" />
               </div>
             </div>
 
-            <!-- REVIEW -->
+            <!-- review -->
             <p class="text">
               {{ r.reviewText || "No review text" }}
             </p>
 
-            <!-- FOOTER -->
+            <!-- footer -->
             <div class="footer">
 
-              <!-- USER -->
-              <button
-                class="user"
-                @click.stop="openProfile(r.user_id)"
-              >
-                <img
-                  v-if="r.avatar"
-                  :src="r.avatar"
-                  class="avatar"
-                />
+              <!-- user -->
+              <button class="user" @click.stop="openProfile(r.user_id)">
+                <img v-if="r.avatar" :src="r.avatar" class="avatar" />
                 <span v-else class="avatar fallback">
                   {{ r.initials }}
                 </span>
                 <span class="username">@{{ r.username }}</span>
               </button>
 
-              <!-- LIKE -->
-              <button
-                class="like"
-                @click.stop="toggleLike(r)"
-              >
+              <!-- like -->
+              <button class="like" @click.stop="toggleLike(r)">
                 <ion-icon :icon="heart" />
                 <span>{{ r.likes }}</span>
               </button>
@@ -122,22 +99,22 @@ import { useRouter } from "vue-router";
 import axios from "axios";
 import { heart, star, starOutline } from "ionicons/icons";
 
-/* router */
+// router
 const router = useRouter();
 const user = JSON.parse(localStorage.getItem("user") || "null");
 
-/* api */
+// api
 const REVIEWS_API =
   "https://anaseddaouodisee.be/WM-RESTfulAPIProjectCineLog-2526/api/reviews.php";
 const LIKE_API =
   "https://anaseddaouodisee.be/WM-RESTfulAPIProjectCineLog-2526/api/likes.php";
 
-/* state */
+// state
 const loading = ref(true);
 const activeSort = ref("recent");
 const items = ref([]);
 
-/* helpers */
+// helpers
 const initials = (name) =>
   name ? name.slice(0, 2).toUpperCase() : "?";
 
@@ -158,7 +135,7 @@ const normalize = (r) => ({
   likes: Number(r.like_count)
 });
 
-/* load */
+// load reviews
 async function loadReviews() {
   loading.value = true;
   try {
@@ -173,7 +150,7 @@ async function loadReviews() {
 
 onIonViewWillEnter(loadReviews);
 
-/* navigation */
+// open movie details
 const openMovie = async (id) => {
   if (!user?.id) {
     return router.push("/login");
@@ -196,9 +173,7 @@ const openProfile = async (id) => {
   });
 };
 
-
-
-/* like */
+// toggle like
 async function toggleLike(r) {
   if (!user?.id) {
     const t = await toastController.create({
@@ -223,7 +198,7 @@ async function toggleLike(r) {
   color: #fff;
 }
 
-/* SORT */
+/* sort */
 .sort-bar {
   position: sticky;
   top: 0;
@@ -232,14 +207,14 @@ async function toggleLike(r) {
   background: linear-gradient(180deg, #000 80%, transparent);
 }
 
-/* EMPTY */
+/* empty */
 .empty {
   text-align: center;
   margin-top: 60px;
   color: #777;
 }
 
-/* FEED */
+/* feed */
 .feed {
   padding: 12px;
   display: flex;
@@ -247,22 +222,20 @@ async function toggleLike(r) {
   gap: 16px;
 }
 
-/* CARD */
+/* card */
 .card {
   display: flex;
   gap: 14px;
-  background: linear-gradient(
-    180deg,
-    rgba(255,255,255,.08),
-    rgba(255,255,255,.03)
-  );
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, .08),
+      rgba(255, 255, 255, .03));
   border-radius: 18px;
   padding: 14px;
-  box-shadow: 0 18px 36px rgba(0,0,0,.45);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, .45);
   cursor: pointer;
 }
 
-/* POSTER */
+/* poster */
 .poster {
   width: 78px;
   height: 116px;
@@ -270,14 +243,14 @@ async function toggleLike(r) {
   object-fit: cover;
 }
 
-/* BODY */
+/* body */
 .body {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-/* TOP */
+/* top */
 .top {
   display: flex;
   justify-content: space-between;
@@ -294,12 +267,12 @@ async function toggleLike(r) {
   color: #f5c518;
 }
 
-/* TEXT */
+/* text */
 .text {
   margin: 6px 0;
   font-size: .9rem;
   line-height: 1.35;
-  color: rgba(255,255,255,.9);
+  color: rgba(255, 255, 255, .9);
 
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -307,7 +280,7 @@ async function toggleLike(r) {
   overflow: hidden;
 }
 
-/* FOOTER */
+/* footer */
 .footer {
   margin-top: auto;
   display: flex;
@@ -315,7 +288,7 @@ async function toggleLike(r) {
   align-items: center;
 }
 
-/* USER */
+/* user */
 .user {
   display: flex;
   align-items: center;
@@ -345,7 +318,7 @@ async function toggleLike(r) {
   font-size: .75rem;
 }
 
-/* LIKE */
+/* like */
 .like {
   background: none;
   border: none;

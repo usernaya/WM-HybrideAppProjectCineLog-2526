@@ -115,7 +115,7 @@ import { useRouter } from "vue-router";
 
 const router = useRouter();
 
-/* api */
+// api
 const API =
     "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/inc/movies/search_all.php";
 
@@ -126,7 +126,7 @@ const REQUEST_API =
     "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/movie_requests.php";
 
 
-/* state */
+// state
 const query = ref("");
 const loading = ref(false);
 const popularMovies = ref([]);
@@ -137,7 +137,7 @@ const results = ref({
     tmdb: []
 });
 
-/* modal */
+// modal
 const showRequestModal = ref(false);
 const sendingRequest = ref(false);
 
@@ -147,13 +147,13 @@ const requestForm = ref({
     director: ""
 });
 
-/* list */
+// computed movies
 const movies = computed(() => [
     ...results.value.internal.map(m => ({ ...m, source: "internal" })),
     ...results.value.tmdb.map(m => ({ ...m, source: "tmdb" }))
 ]);
 
-/* actions */
+// search action
 async function onSearch() {
     if (query.value.trim().length < 2) {
         results.value.internal = [];
@@ -239,7 +239,7 @@ async function loadPopularMovies() {
 }
 
 
-/* requests */
+// request modal
 function openRequestModal() {
     if (!user) {
         router.push({ name: "Login" });
@@ -294,21 +294,21 @@ async function showToast(message) {
     await toast.present();
 }
 
-// reset state when entering the view bc of ionic's page caching
+// reset state when entering the view
 onIonViewWillEnter(() => {
-  // reset state (important sur Android)
-  loading.value = false;
-  query.value = "";
-  results.value.internal = [];
-  results.value.tmdb = [];
+    // reset state 
+    loading.value = false;
+    query.value = "";
+    results.value.internal = [];
+    results.value.tmdb = [];
 
-  loadPopularMovies();
+    loadPopularMovies();
 });
 
 // reset state when leaving the view
 onIonViewDidLeave(() => {
-  query.value = "";
-  loading.value = false;
+    query.value = "";
+    loading.value = false;
 });
 
 </script>

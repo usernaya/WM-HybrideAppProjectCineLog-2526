@@ -1,6 +1,6 @@
 import { ref, computed } from "vue";
 
-/* state (global) */
+// state
 const user = ref(
   localStorage.getItem("user")
     ? JSON.parse(localStorage.getItem("user"))
@@ -10,12 +10,12 @@ const user = ref(
 const role = ref(localStorage.getItem("role") || "guest");
 const token = ref(localStorage.getItem("token") || null);
 
-/* computed */
+// getters
 const isLoggedIn = computed(() => role.value !== "guest");
 const isAdmin = computed(() => role.value === "admin");
 const isUser = computed(() => role.value === "user");
 
-/* actions */
+// actions
 function login(userData) {
   user.value = userData;
   role.value = userData.role;
@@ -42,7 +42,7 @@ function loginAsGuest() {
   localStorage.setItem("role", "guest");
 }
 
-/* export */
+// composable 
 export function useAuth() {
   return {
     user,
