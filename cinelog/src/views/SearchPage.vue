@@ -102,7 +102,9 @@ import {
     IonModal,
     IonItem,
     IonInput,
-    toastController
+    toastController,
+    onIonViewWillEnter,
+    onIonViewDidLeave
 } from "@ionic/vue";
 
 import { addOutline } from "ionicons/icons";
@@ -110,7 +112,6 @@ import { ref, computed } from "vue";
 import axios from "axios";
 import noPoster from "@/assets/posters/no-poster.png";
 import { useRouter } from "vue-router";
-import { onMounted } from "vue";
 
 const router = useRouter();
 
@@ -237,9 +238,6 @@ async function loadPopularMovies() {
     }
 }
 
-onMounted(() => {
-    loadPopularMovies();
-});
 
 /* requests */
 function openRequestModal() {
@@ -296,6 +294,22 @@ async function showToast(message) {
     await toast.present();
 }
 
+// reset state when entering the view bc of ionic's page caching
+onIonViewWillEnter(() => {
+  // reset state (important sur Android)
+  loading.value = false;
+  query.value = "";
+  results.value.internal = [];
+  results.value.tmdb = [];
+
+  loadPopularMovies();
+});
+
+// reset state when leaving the view
+onIonViewDidLeave(() => {
+  query.value = "";
+  loading.value = false;
+});
 
 </script>
 

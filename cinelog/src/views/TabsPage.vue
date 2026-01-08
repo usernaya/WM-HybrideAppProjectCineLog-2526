@@ -2,48 +2,32 @@
   <ion-page>
     <ion-tabs>
 
-      <!-- router outlet -->
-      <ion-router-outlet />
+      <ion-router-outlet :key="$route.fullPath" />
 
-      <!-- bottom tab bar -->
       <ion-tab-bar slot="bottom" class="tabbar">
 
-        <!-- HOME -->
         <ion-tab-button tab="home" href="/tabs/tab1">
-          <ion-icon
-            :icon="$route.name === 'Home' ? home : homeOutline"
-            class="tab-icon"
-          />
+          <ion-icon :icon="homeOutline" />
         </ion-tab-button>
 
-        <!-- SEARCH -->
         <ion-tab-button tab="search" href="/tabs/search">
-          <ion-icon
-            :icon="$route.name === 'Search' ? search : searchOutline"
-            class="tab-icon"
-          />
+          <ion-icon :icon="searchOutline" />
         </ion-tab-button>
 
-        <!-- REVIEWS -->
         <ion-tab-button tab="reviews" href="/tabs/reviews">
-          <ion-icon
-            :icon="$route.name === 'Reviews' ? chatbubbles : chatbubblesOutline"
-            class="tab-icon"
-          />
+          <ion-icon :icon="chatbubblesOutline" />
         </ion-tab-button>
 
-        <!-- PROFILE -->
         <ion-tab-button tab="profile" href="/tabs/profile">
-          <ion-icon
-            :icon="$route.name === 'Profile' ? person : personOutline"
-            class="tab-icon"
-          />
+          <ion-icon :icon="personOutline" />
         </ion-tab-button>
 
       </ion-tab-bar>
+
     </ion-tabs>
   </ion-page>
 </template>
+
 
 <script setup>
 import {
@@ -55,6 +39,8 @@ import {
   IonIcon
 } from "@ionic/vue";
 
+import { useRouter } from "vue-router";
+
 import {
   home,
   homeOutline,
@@ -65,7 +51,16 @@ import {
   person,
   personOutline
 } from "ionicons/icons";
+
+const router = useRouter();
+
+function go(path) {
+  if (router.currentRoute.value.fullPath !== path) {
+    router.push(path);
+  }
+}
 </script>
+
 
 <style scoped>
 /* tab bar background */
