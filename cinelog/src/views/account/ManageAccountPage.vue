@@ -14,16 +14,13 @@
       <div class="card">
         <!-- avatar -->
         <div class="avatar-section">
-          <div class="avatar" @click="triggerFile">
-            <img v-if="preview || form.avatar_url" :src="preview || form.avatar_url" />
+          <div class="avatar" @click="chooseAvatarSource">
+            <img v-if="avatarSrc" :src="avatarSrc" />
             <span v-else>{{ initials }}</span>
           </div>
 
           <p class="avatar-hint">Tap to change photo</p>
         </div>
-
-        <!-- hidden file input -->
-        <input ref="fileInput" type="file" accept="image/*" hidden @change="onFileChange" />
 
         <!-- form -->
         <ion-item class="field">
@@ -105,40 +102,29 @@
 
 <script setup>
 import {
-  IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonContent,
-  IonItem,
-  IonInput,
-  IonButton,
-  IonSpinner,
-  IonButtons,
-  IonBackButton,
-  IonText,
-  IonModal
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
+  IonItem, IonInput, IonButton, IonSpinner,
+  IonButtons, IonBackButton, IonText, IonModal,
+  actionSheetController
 } from "@ionic/vue";
 
-import { reactive, ref, computed, onMounted } from "vue";
+import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
+import { reactive, ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
-import { watch } from "vue";
 
-/* auth */
+// auth
 const user = JSON.parse(localStorage.getItem("user"));
 if (!user?.id) window.location.href = "/login";
 
-/* refs */
-const fileInput = ref(null);
+// state
+const router = useRouter();
 const selectedFile = ref(null);
 const preview = ref(null);
+const saving = ref(false);
+const error = ref("");
 
-/* router */
-const router = useRouter();
-
-
-/* form */
+// form data
 const form = reactive({
   firstname: "",
   lastname: "",
@@ -147,43 +133,42 @@ const form = reactive({
   avatar_url: ""
 });
 
-const saving = ref(false);
-const error = ref("");
-
-/* password modal */
+// password modal
 const showPasswordModal = ref(false);
 const changingPassword = ref(false);
 const passwordError = ref("");
-
 const passwordForm = reactive({
   current: "",
   new: "",
   confirm: ""
 });
 
-/* email validation */
+// email validation
 const emailTouched = ref(false);
-
-const isEmailValid = computed(() => {
-  if (!form.email) return false;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
-});
-
-/* detect when user edits email */
-watch(
-  () => form.email,
-  () => {
-    emailTouched.value = true;
-  }
+const isEmailValid = computed(() =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email || "")
 );
 
-/* computed */
-const initials = computed(() => {
-  if (!form.firstname || !form.lastname) return "?";
-  return (form.firstname[0] + form.lastname[0]).toUpperCase();
-});
+watch(() => form.email, () => (emailTouched.value = true));
 
-/* api */
+// computed
+
+const avatarSrc = computed(() =>
+  preview.value
+    ? preview.value
+    : form.avatar_url
+      ? `${form.avatar_url}?t=${Date.now()}`
+      : ""
+);
+
+
+const initials = computed(() =>
+  form.firstname && form.lastname
+    ? (form.firstname[0] + form.lastname[0]).toUpperCase()
+    : "?"
+);
+
+// api
 const PROFILE_API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/inc/profile/get_profile.php";
 
@@ -193,42 +178,93 @@ const UPDATE_API =
 const CHANGE_PASSWORD_API =
   "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/inc/profile/change_password.php";
 
-/* load profile */
+// load profile
 onMounted(async () => {
   try {
     const res = await axios.get(PROFILE_API, {
       params: { user_id: user.id }
     });
-
     Object.assign(form, res.data.data.user);
   } catch {
     error.value = "Failed to load profile";
   }
 });
 
-/* avatar upload */
-function triggerFile() {
-  fileInput.value.click();
+// avatar upload
+async function chooseAvatarSource() {
+  const sheet = await actionSheetController.create({
+    header: "Change profile photo",
+    buttons: [
+      { text: "Take photo", icon: "camera", handler: () => getPhoto(CameraSource.Camera) },
+      { text: "Choose from gallery", icon: "image", handler: () => getPhoto(CameraSource.Photos) },
+      { text: "Cancel", role: "cancel" }
+    ]
+  });
+  await sheet.present();
 }
 
-function onFileChange(e) {
-  const file = e.target.files[0];
-  if (!file) return;
+async function getPhoto(source) {
+  try {
+    const photo = await Camera.getPhoto({
+      quality: 80,
+      allowEditing: false,
+      resultType: CameraResultType.Base64,
+      source
+    });
 
-  selectedFile.value = file;
-  preview.value = URL.createObjectURL(file);
+    if (!photo.base64String) return;
+
+    preview.value = `data:image/jpeg;base64,${photo.base64String}`;
+
+    const blob = base64ToBlob(photo.base64String, "image/jpeg");
+    selectedFile.value = new File([blob], `avatar_${user.id}.jpg`, {
+      type: "image/jpeg"
+    });
+
+    await uploadAvatar();
+  } catch {
+    console.warn("Camera cancelled");
+  }
 }
 
-/* save */
+async function uploadAvatar() {
+  if (!selectedFile.value) return;
+
+  try {
+    const data = new FormData();
+    data.append("user_id", user.id);
+    data.append("avatar", selectedFile.value);
+
+    const res = await axios.post(UPDATE_API, data);
+    if (res.data.status !== 200) throw new Error();
+
+    form.avatar_url = res.data.avatar_url;
+
+    localStorage.setItem(
+      "user",
+      JSON.stringify({ ...user, avatar_url: res.data.avatar_url })
+    );
+  } catch {
+    error.value = "Avatar upload failed";
+  }
+}
+
+// helper: base64 to blob
+function base64ToBlob(base64, type) {
+  const bytes = atob(base64);
+  const arr = [];
+  for (let i = 0; i < bytes.length; i++) arr.push(bytes.charCodeAt(i));
+  return new Blob([new Uint8Array(arr)], { type });
+}
+
+// save profile
 async function save() {
-  error.value = "";
   if (!isEmailValid.value) {
     error.value = "Invalid email address";
     return;
   }
 
   saving.value = true;
-
   try {
     const data = new FormData();
     data.append("user_id", user.id);
@@ -237,40 +273,22 @@ async function save() {
     data.append("username", form.username);
     data.append("email", form.email);
 
-    if (selectedFile.value) {
-      data.append("avatar", selectedFile.value);
-    }
+    const res = await axios.post(UPDATE_API, data);
+    if (res.data.status !== 200) throw new Error();
 
-    const res = await axios.post(UPDATE_API, data, {
-      headers: { "Content-Type": "multipart/form-data" }
-    });
-
-    if (res.data.status !== 200) {
-      throw new Error(res.data.message);
-    }
-
-    localStorage.setItem(
-      "user",
-      JSON.stringify({
-        ...user,
-        ...form,
-        avatar_url: res.data.avatar_url ?? form.avatar_url
-      })
-    );
+    localStorage.setItem("user", JSON.stringify({ ...user, ...form }));
     router.back();
-  } catch (e) {
-    error.value = e?.response?.data?.message || "Update failed";
+  } catch {
+    error.value = "Update failed";
   } finally {
     saving.value = false;
   }
 }
 
-/* modal actions */
+// password modal functions
 function openPasswordModal() {
   passwordError.value = "";
-  passwordForm.current = "";
-  passwordForm.new = "";
-  passwordForm.confirm = "";
+  Object.assign(passwordForm, { current: "", new: "", confirm: "" });
   showPasswordModal.value = true;
 }
 
@@ -278,10 +296,7 @@ function closePasswordModal() {
   showPasswordModal.value = false;
 }
 
-/* change password */
 async function changePassword() {
-  passwordError.value = "";
-
   if (!passwordForm.current || !passwordForm.new || !passwordForm.confirm) {
     passwordError.value = "All fields are required";
     return;
@@ -293,7 +308,6 @@ async function changePassword() {
   }
 
   changingPassword.value = true;
-
   try {
     const res = await axios.post(CHANGE_PASSWORD_API, {
       user_id: user.id,
@@ -301,15 +315,10 @@ async function changePassword() {
       new_password: passwordForm.new
     });
 
-
-    if (res.data.status !== 200) {
-      throw new Error(res.data.message);
-    }
-
+    if (res.data.status !== 200) throw new Error();
     closePasswordModal();
-  } catch (e) {
-    passwordError.value =
-      e?.response?.data?.message || "Password update failed";
+  } catch {
+    passwordError.value = "Password update failed";
   } finally {
     changingPassword.value = false;
   }

@@ -254,10 +254,14 @@ const fullName = computed(() => {
 const avatarSrc = computed(() => {
   const a = profile.value?.user?.avatar_url;
   if (!a) return "";
-  return String(a).startsWith("http")
+
+  const url = String(a).startsWith("http")
     ? String(a)
     : API_BASE + String(a).replace(/^\/+/, "");
+
+  return `${url}?t=${Date.now()}`;
 });
+
 
 // relation type
 const relationType = computed(() => {
