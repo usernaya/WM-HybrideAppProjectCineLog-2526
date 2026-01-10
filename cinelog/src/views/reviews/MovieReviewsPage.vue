@@ -113,6 +113,11 @@ const movie = ref(null);
 const reviews = ref([]);
 const myStars = ref(0);
 const myReview = ref("");
+const stored = JSON.parse(localStorage.getItem("selected_movie") || "null");
+if (!stored) {
+  console.warn("No selected_movie in storage");
+}
+
 
 // delete alert
 const showDeleteAlert = ref(false);
@@ -120,16 +125,19 @@ const reviewToDelete = ref(null);
 
 // api
 const REVIEWS_API =
-  "https://anaseddaouodisee.be/WM-RESTfulAPIProjectCineLog-2526/api/reviews.php";
+  "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/reviews.php";
 
 const LIKE_API =
   "https://anaseddaouodisee.be/WM-RESTfulAPIProjectCineLog-2526/api/likes.php";
 
 // load data
 async function loadData() {
-  const res = await axios.get(REVIEWS_API, {
-    params: { movie_id: movieId }
-  });
+  const params =
+    stored && stored.tmdb_id
+      ? { tmdb_id: stored.tmdb_id }
+      : { movie_id: movieId };
+
+  const res = await axios.get(REVIEWS_API, { params });
 
   reviews.value = res.data.data ?? [];
 
@@ -140,6 +148,7 @@ async function loadData() {
     };
   }
 }
+
 
 // average rating
 const avgRating = computed(() => {
@@ -152,12 +161,17 @@ const avgRating = computed(() => {
 async function submitReview() {
   if (!user || !myStars.value) return;
 
-  await axios.post(REVIEWS_API, {
-    user_id: user.id,
-    movie_id: movieId,
-    stars: myStars.value,
-    review: myReview.value
-  });
+  const payload = {
+  user_id: user.id,
+  stars: myStars.value,
+  review: myReview.value,
+  ...(stored?.tmdb_id
+    ? { tmdb_id: stored.tmdb_id }
+    : { movie_id: movieId })
+};
+
+await axios.post(REVIEWS_API, payload);
+
 
   myStars.value = 0;
   myReview.value = "";

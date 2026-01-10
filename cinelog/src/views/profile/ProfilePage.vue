@@ -262,6 +262,26 @@ const avatarSrc = computed(() => {
   return `${url}?t=${Date.now()}`;
 });
 
+function openMovie(m) {
+  const movie = {
+    id: m.movie_id ?? m.id,   
+    tmdb_id: m.tmdb_id ?? null,
+    title: m.title,
+    poster_url: m.poster_url,
+    description: m.description ?? null,
+    source: m.tmdb_id ? "tmdb" : "internal"
+  };
+
+  localStorage.setItem("selected_movie", JSON.stringify(movie));
+
+  router.push({
+    name: "MovieDetails",
+    params: { id: movie.tmdb_id ?? movie.id }
+  });
+}
+
+
+
 
 // relation type
 const relationType = computed(() => {

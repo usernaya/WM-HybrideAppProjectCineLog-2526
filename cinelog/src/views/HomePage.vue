@@ -102,7 +102,6 @@ const BASE =
 const trending = ref([]);
 const popular = ref([]);
 const topRated = ref([]);
-const internalMovies = ref([]);
 
 const loadingTop = ref(true);
 const loadingGrid = ref(true);
@@ -124,20 +123,6 @@ const tmdbGenreMap = {
   53: "Thriller", 10752: "War", 37: "Western"
 };
 
-// mapping functions
-function mapInternalMovie(m) {
-  return {
-    id: m.id,
-    tmdb_id: null,
-    title: m.title,
-    year: String(m.year),
-    poster_url: m.poster_url,
-    genres: m.genre ? [m.genre] : [],
-    description: m.description || "No description available.",
-    source: "internal",
-    categories: ["all"]
-  };
-}
 
 function mapTmdbMovie(m, category) {
   return {
@@ -161,7 +146,6 @@ async function loadTopSections() {
     const res = await axios.get(`${BASE}/get_all.php`);
     const parsed = JSON.parse(res.data.data);
 
-    internalMovies.value = parsed.internal.map(mapInternalMovie);
     trending.value = (parsed.tmdb_trending || []).map(m =>
       mapTmdbMovie(m, "trending")
     );
@@ -169,6 +153,7 @@ async function loadTopSections() {
     loadingTop.value = false;
   }
 }
+
 
 async function loadPopularTopRated() {
   try {
@@ -211,13 +196,14 @@ const allMoviesForGrid = computed(() => {
   const list = [];
 
   [...trending.value, ...popular.value, ...topRated.value].forEach(m => {
-    if (!seen.has(m.id)) {
-      seen.add(m.id);
+    const key = m.id;
+    if (!seen.has(key)) {
+      seen.add(key);
       list.push(m);
     }
   });
 
-  return [...internalMovies.value, ...list];
+  return list; 
 });
 
 const filteredMovies = computed(() => {
@@ -239,14 +225,45 @@ const filteredMovies = computed(() => {
 });
 
 // open movie details
-function openDetail(movie) {
-  localStorage.setItem("selected_movie", JSON.stringify(movie));
+async function openDetail(movie) {
+  let internalId = null;
 
+  if (movie.source === "tmdb") {
+    try {
+      const res = await axios.post(`${BASE}/add.php`, {
+        tmdb_id: movie.tmdb_id,
+        title: movie.title,
+        year: movie.year || null,
+        genre: movie.genres?.[0] || null,
+        description: movie.description || null,
+        poster_url: movie.poster_url || null
+      });
+
+      internalId = res.data.movie_id ?? null;
+
+    } catch (e) {
+      console.error("TMDB add failed", e);
+    }
+  }
+
+  localStorage.setItem("selected_movie", JSON.stringify({
+    id: internalId,        
+    tmdb_id: movie.tmdb_id,   
+    title: movie.title,
+    poster_url: movie.poster_url,
+    description: movie.description,
+    source: "tmdb"
+  }));
+
+  
   router.push({
     name: "MovieDetails",
-    params: { id: movie.tmdb_id ?? movie.id }
+    params: { id: movie.tmdb_id }
   });
 }
+
+
+
 
 // initial load
 loadTopSections();
