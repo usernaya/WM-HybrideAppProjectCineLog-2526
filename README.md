@@ -10,14 +10,6 @@ De applicatie maakt gebruik van:
 - een externe film-API (TMDB)
 - een hybride mobiele frontend gebouwd met Ionic en Capacitor
 
-## Repositories
-
-### Hybride App (Ionic + Capacitor)
-Deze repository
-
-### RESTful API
-https://github.com/usernaya/WM-RESTfulAPIProjectCineLog-2526
-
 ## Belangrijkste functionaliteiten
 
 ### Films
