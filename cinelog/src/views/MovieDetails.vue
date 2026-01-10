@@ -193,7 +193,7 @@ async function loadDescriptionIfMissing() {
   if (!movie.value || movie.value.description) return;
 
   try {
-    // TMDB fallback uniquement
+    // TMDB fallback 
     if (movie.value.tmdb_id) {
       const res = await axios.get(
         `https://api.themoviedb.org/3/movie/${movie.value.tmdb_id}`,
