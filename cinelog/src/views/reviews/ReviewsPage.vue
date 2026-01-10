@@ -30,7 +30,7 @@
 
       <!-- feed -->
       <div v-else class="feed">
-        <article v-for="r in items" :key="r.id" class="card" @click="openMovie(r.movie_id)">
+        <article v-for="r in items" :key="r.id" class="card" @click="openMovie(r)">
           <!-- poster -->
           <img class="poster" :src="r.poster" />
 
@@ -105,7 +105,7 @@ const user = JSON.parse(localStorage.getItem("user") || "null");
 
 // api
 const REVIEWS_API =
-  "https://anaseddaouodisee.be/WM-RESTfulAPIProjectCineLog-2526/api/reviews.php";
+  "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/reviews.php";
 const LIKE_API =
   "https://anaseddaouodisee.be/WM-RESTfulAPIProjectCineLog-2526/api/likes.php";
 
@@ -120,7 +120,11 @@ const initials = (name) =>
 
 const normalize = (r) => ({
   id: Number(r.id),
-  movie_id: Number(r.movie_id),
+
+  movie_id: r.movie_id,
+  tmdb_id: r.tmdb_id,
+  is_tmdb: !!r.tmdb_id,
+
   user_id: Number(r.user_id),
 
   movieTitle: r.title,
@@ -135,14 +139,17 @@ const normalize = (r) => ({
   likes: Number(r.like_count)
 });
 
+
 // load reviews
 async function loadReviews() {
   loading.value = true;
+
   try {
     const res = await axios.get(REVIEWS_API, {
       params: { sort: activeSort.value }
     });
-    items.value = res.data.data.map(normalize);
+
+    items.value = (res.data.data ?? []).map(normalize);
   } finally {
     loading.value = false;
   }
@@ -151,14 +158,20 @@ async function loadReviews() {
 onIonViewWillEnter(loadReviews);
 
 // open movie details
-const openMovie = async (id) => {
-  if (!user?.id) {
-    return router.push("/login");
-  }
+const openMovie = (r) => {
+  const movie = {
+    id: r.movie_id,
+    title: r.movieTitle,
+    poster_url: r.poster,
+    description: null,
+    source: "internal"
+  };
+
+  localStorage.setItem("selected_movie", JSON.stringify(movie));
 
   router.push({
-    name: "MovieReviews",
-    params: { id }
+    name: "MovieDetails",
+    params: { id: r.movie_id }
   });
 };
 

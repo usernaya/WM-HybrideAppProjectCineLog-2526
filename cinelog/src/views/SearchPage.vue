@@ -24,19 +24,8 @@
             <!-- loading -->
             <ion-progress-bar v-if="loading" type="indeterminate" color="danger" />
 
-            <!-- popular movies -->
-            <div v-if="!query.length && popularMovies.length" class="grid">
-                <div v-for="m in popularMovies" :key="'popular-' + m.id" class="card" @click="openMovie(m)">
-                    <img :src="m.poster" />
-                    <div class="overlay">
-                        <p class="title">{{ m.title }}</p>
-                        <p v-if="m.year" class="year">{{ m.year }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- results -->
-            <div v-else-if="movies.length" class="grid">
+            <!-- search results -->
+            <div v-if="query.length >= 2 && movies.length" class="grid">
                 <div v-for="m in movies" :key="m.id + m.source" class="card" @click="openMovie(m)">
                     <img :src="m.poster" />
                     <div class="overlay">
@@ -47,9 +36,10 @@
             </div>
 
             <!-- empty -->
-            <div v-else-if="query.length >= 2 && !loading" class="empty">
+            <div v-if="query.length >= 2 && !loading && !movies.length" class="empty">
                 <p>No results found</p>
             </div>
+
 
         </ion-content>
     </ion-page>
@@ -119,9 +109,6 @@ const router = useRouter();
 const API =
     "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/inc/movies/search_all.php";
 
-const TMDB_POPULAR_API =
-    "https://api.themoviedb.org/3/movie/popular?api_key=6bc179f67d4901690b3b039f05b87254";
-
 const REQUEST_API =
     "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/movie_requests.php";
 
@@ -129,7 +116,6 @@ const REQUEST_API =
 // state
 const query = ref("");
 const loading = ref(false);
-const popularMovies = ref([]);
 const user = JSON.parse(localStorage.getItem("user") || "null");
 
 const results = ref({
@@ -187,57 +173,46 @@ async function onSearch() {
 
 
 function openMovie(movie) {
-    localStorage.setItem("selected_movie", JSON.stringify(movie));
+    localStorage.setItem("selected_movie", JSON.stringify({
+        id: movie.id,           
+        tmdb_id: movie.tmdb_id,
+        title: movie.title,
+        poster_url: movie.poster,
+        description: movie.description,
+        source: movie.source
+    }));
+
+
 
     router.push({
         name: "MovieDetails",
-        params: { id: movie.id }
+        params: { id: movie.tmdb_id ?? movie.id }
     });
+
 }
 
 function normalizeMovie(movie, source) {
-    const hasPoster =
-        source === "tmdb" ? !!movie.poster_path : !!movie.poster_url;
-
-    const hasDescription =
-        source === "tmdb"
-            ? !!movie.overview?.trim()
-            : !!movie.description?.trim();
-
-    const hasYear =
-        source === "tmdb" ? !!movie.release_date : !!movie.year;
-
-    if (!hasPoster && !hasDescription && !hasYear) {
-        return null;
-    }
-
     return {
         ...movie,
+        description:
+            source === "tmdb"
+                ? movie.overview || "No description available."
+                : movie.description || "No description available.",
+
         year:
             source === "tmdb"
                 ? movie.release_date?.split("-")[0]
                 : movie.year,
-        poster: hasPoster
-            ? source === "tmdb"
+
+        poster:
+            source === "tmdb" && movie.poster_path
                 ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                : movie.poster_url
-            : noPoster
+                : movie.poster_url || noPoster,
+
+        tmdb_id: source === "tmdb" ? movie.id : null,
+        source
     };
 }
-
-async function loadPopularMovies() {
-    try {
-        const res = await axios.get(TMDB_POPULAR_API);
-
-        popularMovies.value = res.data.results
-            .map(m => normalizeMovie(m, "tmdb"))
-            .filter(Boolean);
-
-    } catch (err) {
-        console.error("Popular movies error", err);
-    }
-}
-
 
 // request modal
 function openRequestModal() {
@@ -301,8 +276,6 @@ onIonViewWillEnter(() => {
     query.value = "";
     results.value.internal = [];
     results.value.tmdb = [];
-
-    loadPopularMovies();
 });
 
 // reset state when leaving the view

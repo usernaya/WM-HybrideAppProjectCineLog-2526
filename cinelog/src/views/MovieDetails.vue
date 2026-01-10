@@ -3,7 +3,7 @@
     <ion-header>
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-back-button default-href="/tabs/home" />
+          <ion-back-button default-href="/tabs/reviews" />
         </ion-buttons>
         <ion-title>{{ movie?.title || "Movie" }}</ion-title>
       </ion-toolbar>
@@ -150,7 +150,7 @@ const reviewToDelete = ref(null);
 
 // api
 const REVIEWS_API =
-  "https://anaseddaouodisee.be/WM-RESTfulAPIProjectCineLog-2526/api/reviews.php";
+  "https://ayaboutaarourte-odisee.be/wm/WM-RESTfulAPIProjectCineLog-2526/api/reviews.php";
 const LIKES_API =
   "https://anaseddaouodisee.be/WM-RESTfulAPIProjectCineLog-2526/api/likes.php";
 const WATCHLIST_API =
@@ -173,19 +173,66 @@ async function loadMovie() {
   const stored = localStorage.getItem("selected_movie");
   if (!stored) return (loading.value = false);
 
-  movie.value = JSON.parse(stored);
+  const parsed = JSON.parse(stored);
+
+  movie.value = {
+    ...parsed,
+    description:
+      parsed.source === "tmdb" || parsed.source === "internal"
+        ? parsed.description
+        : null
+  };
+
+  await loadDescriptionIfMissing()
   await loadReviews();
   await checkWatchlist();
   loading.value = false;
 }
 
-async function loadReviews() {
-  const params = movie.value.tmdb_id
-    ? { tmdb_id: movie.value.tmdb_id }
-    : { movie_id: movie.value.id };
+async function loadDescriptionIfMissing() {
+  if (!movie.value || movie.value.description) return;
 
-  const res = await axios.get(REVIEWS_API, { params });
-  reviews.value = res.data.data ?? [];
+  try {
+    // TMDB fallback 
+    if (movie.value.tmdb_id) {
+      const res = await axios.get(
+        `https://api.themoviedb.org/3/movie/${movie.value.tmdb_id}`,
+        {
+          params: {
+            api_key: "6bc179f67d4901690b3b039f05b87254",
+            language: "en-US"
+          }
+        }
+      );
+
+      movie.value.description = res.data.overview || null;
+    }
+  } catch (e) {
+    console.warn("Description load failed", e);
+  }
+}
+
+async function loadReviews() {
+  if (!movie.value || !movie.value.id) {
+    reviews.value = [];
+    return;
+  }
+
+  try {
+    const res = await axios.get(REVIEWS_API, {
+      params: {
+        movie_id: movie.value.id
+      }
+    });
+
+    reviews.value = Array.isArray(res.data.data)
+      ? res.data.data
+      : [];
+
+  } catch (e) {
+    console.error("Failed to load reviews", e);
+    reviews.value = [];
+  }
 }
 
 // submit
@@ -194,21 +241,26 @@ async function submitReview() {
 
   submitting.value = true;
 
-  const payload = {
-    user_id: user.id,
-    stars: myStars.value,
-    review: myReview.value,
-    ...(movie.value.tmdb_id
-      ? { tmdb_id: movie.value.tmdb_id }
-      : { movie_id: movie.value.id })
-  };
+  try {
+    const payload = {
+      user_id: user.id,
+      movie_id: movie.value.id,
+      stars: myStars.value,
+      review: myReview.value || ""
+    };
 
-  await axios.post(REVIEWS_API, payload);
+    await axios.post(REVIEWS_API, payload);
 
-  myStars.value = 0;
-  myReview.value = "";
-  submitting.value = false;
-  loadReviews();
+    myStars.value = 0;
+    myReview.value = "";
+    await loadReviews();
+
+  } catch (e) {
+    console.error("Review submit failed", e.response?.data || e);
+    alert(e.response?.data?.error || "Failed to submit review");
+  } finally {
+    submitting.value = false;
+  }
 }
 
 // like
