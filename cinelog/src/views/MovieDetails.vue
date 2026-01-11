@@ -213,17 +213,21 @@ async function loadDescriptionIfMissing() {
 }
 
 async function loadReviews() {
-  if (!movie.value || !movie.value.id) {
+  if (!movie.value) {
     reviews.value = [];
     return;
   }
 
   try {
-    const res = await axios.get(REVIEWS_API, {
-      params: {
-        movie_id: movie.value.id
-      }
-    });
+    const params = {};
+
+    if (movie.value.tmdb_id) {
+      params.tmdb_id = movie.value.tmdb_id;
+    } else {
+      params.movie_id = movie.value.id;
+    }
+
+    const res = await axios.get(REVIEWS_API, { params });
 
     reviews.value = Array.isArray(res.data.data)
       ? res.data.data
@@ -244,10 +248,16 @@ async function submitReview() {
   try {
     const payload = {
       user_id: user.id,
-      movie_id: movie.value.id,
       stars: myStars.value,
       review: myReview.value || ""
     };
+
+    // movie identifier
+    if (movie.value.tmdb_id) {
+      payload.tmdb_id = movie.value.tmdb_id;
+    } else {
+      payload.movie_id = movie.value.id;
+    }
 
     await axios.post(REVIEWS_API, payload);
 

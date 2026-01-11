@@ -180,7 +180,6 @@ async function refreshPage(event) {
   trending.value = [];
   popular.value = [];
   topRated.value = [];
-  internalMovies.value = [];
 
   await Promise.all([
     loadTopSections(),
@@ -226,11 +225,9 @@ const filteredMovies = computed(() => {
 
 // open movie details
 async function openDetail(movie) {
-  let internalId = null;
-
   if (movie.source === "tmdb") {
     try {
-      const res = await axios.post(`${BASE}/add.php`, {
+      await axios.post(`${BASE}/add.php`, {
         tmdb_id: movie.tmdb_id,
         title: movie.title,
         year: movie.year || null,
@@ -238,32 +235,25 @@ async function openDetail(movie) {
         description: movie.description || null,
         poster_url: movie.poster_url || null
       });
-
-      internalId = res.data.movie_id ?? null;
-
     } catch (e) {
-      console.error("TMDB add failed", e);
+      console.warn("TMDB add failed", e);
     }
   }
 
   localStorage.setItem("selected_movie", JSON.stringify({
-    id: internalId,        
-    tmdb_id: movie.tmdb_id,   
+    id: null,
+    tmdb_id: movie.tmdb_id,
     title: movie.title,
     poster_url: movie.poster_url,
     description: movie.description,
     source: "tmdb"
   }));
 
-  
   router.push({
     name: "MovieDetails",
     params: { id: movie.tmdb_id }
   });
 }
-
-
-
 
 // initial load
 loadTopSections();
