@@ -82,7 +82,7 @@ async function loadMovies() {
 
     // only manually added movies
     movies.value = allMovies.filter(
-      movie => Number(movie.is_default) === 0
+      movie => movie.created_by !== null && movie.created_by !== ""
     );
 
   } catch (e) {

@@ -249,7 +249,10 @@ async function submitReview() {
     const payload = {
       user_id: user.id,
       stars: myStars.value,
-      review: myReview.value || ""
+      review: myReview.value || "",
+      title: movie.value.title,
+      poster_url: movie.value.poster_url || movie.value.poster,
+      description: movie.value.description || null
     };
 
     // movie identifier
