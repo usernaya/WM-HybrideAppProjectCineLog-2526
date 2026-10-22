@@ -199,7 +199,7 @@ async function loadDescriptionIfMissing() {
         `https://api.themoviedb.org/3/movie/${movie.value.tmdb_id}`,
         {
           params: {
-            api_key: "6bc179f67d4901690b3b039f05b87254",
+            api_key: import.meta.env.VITE_TMDB_API_KEY,
             language: "en-US"
           }
         }
